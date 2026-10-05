@@ -76,6 +76,8 @@ COST_DOMAIN = (
     ("口径", ("结果", "金钱", "时间精力", "安全合规")),
 )
 RE_COST_KV = re.compile(r"(钱|时间|精力|收益|口径)\s*=\s*(\S+)")
+# 性价比档（字段 3 的文本形式），用于与成本标签做 6.4 一致性校验（判例 11）
+RE_TIER = re.compile(r"性价比档\*{0,2}\s*[:：]\s*\*{0,2}\s*(极高|高|一般)")
 # 交叉引用：见第 003 条 ／ 见第 HK-023 条
 RE_REF = re.compile(r"见第\s*(?:HK-)?(\d{3})\s*条")
 
@@ -164,6 +166,28 @@ def check_schema(files):
                     problems["schema"].append(
                         f"{name} 成本标签「{key}={val}」超出值域（设计文档 6.3："
                         f"{'/'.join(domain)}）——「长/短」已作废，时间一律用「多」"
+                    )
+            # 成本标签 ↔ 性价比档 内部一致性（设计文档 6.4 合成规则）
+            # 极高 ⇔ 收益大 且 三项成本全为零；两个方向都要查（判例 11）
+            mtier = RE_TIER.search(text)
+            if mtier:
+                tier = mtier.group(1)
+                zero_cost = (
+                    pairs.get("钱") == "0"
+                    and pairs.get("时间") == "少"
+                    and pairs.get("精力") == "否"
+                )
+                big_gain = pairs.get("收益") == "大"
+                if tier == "极高" and not (zero_cost and big_gain):
+                    problems["schema"].append(
+                        f"{name} 性价比档＝极高，但成本标签不是「钱=0 时间=少 精力=否 收益=大」"
+                        f"（现为 {' '.join(f'{k}={pairs.get(k)}' for k, _ in COST_DOMAIN)}）"
+                        f"——6.4 规定极高＝收益大且三项成本全为零，见判例 10、11"
+                    )
+                if tier != "极高" and zero_cost and big_gain:
+                    problems["schema"].append(
+                        f"{name} 成本标签是「钱=0 时间=少 精力=否 收益=大」（三项全零＋收益大），"
+                        f"按 6.4 性价比档应为「极高」，现为「{tier}」"
                     )
 
         # 证据等级与信源域名是否匹配
