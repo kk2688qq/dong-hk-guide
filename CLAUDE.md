@@ -107,9 +107,16 @@
 python tools/check.py                    # 跑全部检查（链接部分只统计）
 python tools/check.py --only schema refs # 只跑指定项
 python tools/check.py --network          # 实际访问链接（慢）
+python tools/check.py --release          # 生成 docs/放行候选.md（放行单底稿）
+python tools/check_copy.py <文案文件.md>  # 文案逐数字复核（判例 8 的双向比对，2026-10-05 建）
 ```
 
 六项检查：`schema` / `refs` / `links` / `promise` / `staleness` / `coverage`。
+
+**`check_copy.py` 单独说**：文案方交稿后**必须**跑一次——它把文案里每个三进制以上的数字，
+逐个到对应正文里找，查不到的报出来。**这就是判例 8 的机器化**：上一轮 HK-002 文案里的
+`42,100`（正文无此数）和把 `178,000` 定性成「本地生数」（正文定性为「非本地生过时数」），
+都是靠它 + 人工看定性才拦下的。脚本只查数字本身，**定性对不对还得人看**。
 
 - `schema` 覆盖：12 字段齐全、编号方案 A（标题必须以 `HK-0NN` 开头且不含文件号）、成本标签注释、署名、A 级与白名单匹配；
 - `refs` 覆盖：交叉引用存在性、HK 编号与 `docs/HK编号对照表.md` 一致、每条都有对应核实记录。
