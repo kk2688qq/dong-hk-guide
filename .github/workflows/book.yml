@@ -3,7 +3,7 @@ name: build-book
 on:
   push:
     branches: [main]
-    paths: ["book/**", "docs/**", "README.md", ".github/workflows/book.yml"]
+    paths: ["book/**", "meta/**", "docs/**", "README.md", ".github/workflows/book.yml"]
   workflow_dispatch:
   # 手动触发：python tools/check.py --only links --network（链接巡检需要网络）
 
@@ -45,6 +45,16 @@ jobs:
             cat "$f" >> dist/full.md
             count=$((count + 1))
           done < <(ls book/*.md | LC_ALL=C sort)
+          # 页脚（作者 + 联系方式 + 免责 + 版权）并入正文，
+          # 确保单独下载 PDF/HTML/EPUB 的读者也能找到作者与联系方式。
+          # 该文件不在 book/ 下，因此不参与条目 schema 质检。
+          if [ -s meta/about.md ]; then
+            printf '\n\n<!-- ===== meta/about.md ===== -->\n\n' >> dist/full.md
+            cat meta/about.md >> dist/full.md
+            echo "appended: meta/about.md（页脚）"
+          else
+            echo "::warning::meta/about.md 缺失，产物将不含作者与联系方式"
+          fi
           echo "merged: $count chapters"
           if [ "$count" -eq 0 ]; then
             echo "::error::book/ 目录里没有任何条目，构建终止"
