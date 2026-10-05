@@ -10,6 +10,10 @@
 发现问题照报，但退出码恒为 0——门禁只管新增内容的质量，
 不管已发布内容的可用性。否则一个人没补完就卡住整个项目。
 
+字段标准：v1.3 设计文档第 7 节「融合 12 字段」（2026-10-05 起生效）。
+编号标准：方案 A（文件名三位顺延号 + 内容层 HK 编号 + 对照表），
+          标题只出现 HK 编号且放最前，文件号不进标题。
+
 依赖：仅标准库。链接巡检需要网络，其余离线可跑。
 """
 
@@ -25,6 +29,7 @@ from datetime import date, datetime
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOK = os.path.join(ROOT, "book")
 DOCS = os.path.join(ROOT, "docs", "核实记录")
+CATALOG = os.path.join(ROOT, "docs", "HK编号对照表.md")
 WHITELIST_DOMAINS = (
     "immd.gov.hk", "edb.gov.hk", "ugc.edu.hk", "info.gov.hk",
     "gov.hk", "elegislation.gov.hk", "censtatd.gov.hk",
@@ -41,10 +46,30 @@ PROMISE_WORDS = (
     "保录取", "保过", "百分百", "100%", "一定能", "保证获批", "稳过",
     "包过", "包录取", "包获批", "绝对没问题", "零风险", "一定能拿",
 )
+
+# v1.3 12 字段（字段 1「编号 + 标题」由标题正则单独校验，字段 10/11 为合并字段）
 REQUIRED_FIELDS = (
-    "适用人群", "要花什么", "换回什么", "关键节点与时效",
-    "官方依据", "证据等级", "常见误传", "最后核实日期", "待核实",
+    ("2 适用人群 + 阶段", r"适用人群\s*\+\s*阶段"),
+    ("3 口径 + 性价比档", r"口径\s*\+\s*性价比档"),
+    ("4 要花什么", r"要花什么"),
+    ("5 换回什么", r"换回什么"),
+    ("6 说人话", r"说人话"),
+    ("7 关键节点与时效", r"关键节点与时效"),
+    ("8 红线提醒", r"红线提醒"),
+    ("9 常见误传", r"常见误传"),
+    ("10 证据等级 + 官方依据", r"官方依据"),
+    ("11 最后核实日期 + 核实人", r"最后核实日期"),
+    ("12 待核实标记", r"待核实"),
 )
+# 证据等级写法兼容：**证据等级**：A ／ 证据等级：**A**
+RE_EVIDENCE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
+# 标题（方案 A）：必须以 HK 编号开头
+RE_TITLE_HK = re.compile(r"^#\s+(HK-\d{3})\s+\S")
+# 成本标签注释（设计文档 6.4 排序铁律的机器可读形式）
+RE_COST_TAG = re.compile(r"<!--\s*成本标签\s*:")
+# 交叉引用：见第 003 条 ／ 见第 HK-023 条
+RE_REF = re.compile(r"见第\s*(?:HK-)?(\d{3})\s*条")
+
 STALE_DAYS = 90
 # 部分大学官网会拒绝非浏览器 UA（返回 403），巡检必须带上浏览器标识
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -64,24 +89,54 @@ def read(path):
         return fh.read()
 
 
+def load_catalog():
+    """读 HK编号对照表 → {HK 编号: 文件号 或 None}。表不存在时返回 None。"""
+    if not os.path.isfile(CATALOG):
+        return None
+    mapping = {}
+    for line in read(CATALOG).splitlines():
+        m = re.match(r"\|\s*(HK-\d{3})\s*\|\s*([^|]*?)\s*\|", line)
+        if not m:
+            continue
+        hk, num = m.group(1), m.group(2).strip()
+        mapping[hk] = num if re.fullmatch(r"\d{3}", num) else None
+    return mapping
+
+
 # ---------------------------------------------------------------- schema
 def check_schema(files):
     for name in files:
         text = read(os.path.join(BOOK, name))
-        missing = [f for f in REQUIRED_FIELDS if f not in text]
-        if missing:
-            problems["schema"].append(f"{name} 缺字段：{'、'.join(missing)}")
-        if not re.search(r"\*\*证据等级\*\*：\s*[ABC]", text):
-            problems["schema"].append(f"{name} 证据等级格式不对（应形如 **证据等级**：A）")
-        if "本条目由" not in text or "核对" not in text:
-            problems["schema"].append(f"{name} 末尾缺「本条目由…核对…」署名")
-        # 标题：条目标题不应带品牌词（设计文档铁律一）
+        for label, pattern in REQUIRED_FIELDS:
+            if not re.search(pattern, text):
+                problems["schema"].append(f"{name} 缺字段：{label}")
+
+        # 字段 1：标题必须是「HK 编号 + 标题」，且标题里不得再出现裸文件号
         title = text.split("\n")[0]
+        m = RE_TITLE_HK.match(title)
+        if not m:
+            problems["schema"].append(
+                f"{name} 标题未按方案 A 起头（应形如「# HK-019 标题」）：{title[:40]}"
+            )
+        else:
+            rest = RE_TITLE_HK.sub("", title).strip()
+            if re.search(r"\b\d{3}\b", rest):
+                problems["schema"].append(
+                    f"{name} 标题里出现了文件号（方案 A 要求文件号不进标题）：{title[:40]}"
+                )
         if "董老师" in title:
             problems["schema"].append(f"{name} 标题带品牌词，违反铁律一（标题按用户搜索词写）")
+
+        if not RE_EVIDENCE.search(text):
+            problems["schema"].append(f"{name} 证据等级格式不对（应形如「证据等级：**A**」）")
+        if "本条目由" not in text or "核对" not in text:
+            problems["schema"].append(f"{name} 末尾缺「本条目由…核对…」署名")
+        if not RE_COST_TAG.search(text):
+            problems["schema"].append(f"{name} 缺成本标签注释（<!-- 成本标签: 钱=… 时间=… 精力=… 收益=… 口径=… -->）")
+
         # 证据等级与信源域名是否匹配
-        m = re.search(r"\*\*证据等级\*\*：\s*([ABC])", text)
-        if m and m.group(1) == "A":
+        me = RE_EVIDENCE.search(text)
+        if me and me.group(1) == "A":
             links = re.findall(r"<(https?://[^>]+)>", text)
             if links:
                 bad = [
@@ -97,13 +152,45 @@ def check_schema(files):
 
 # ---------------------------------------------------------------- refs
 def check_refs(files):
-    """引用守恒：每个「见第 NNN 条」必须对应真实存在的编号。"""
+    """引用守恒：交叉引用必须存在；HK 编号必须与对照表一致；核实记录一一对应。"""
     nums = {name[:3] for name in files}
+    catalog = load_catalog()
+    if catalog is None:
+        problems["refs"].append("docs/HK编号对照表.md 不存在（方案 A 要求对照表入库）")
+        catalog = {}
+    hk_to_num = {hk: num for hk, num in catalog.items() if num}
+    # 反向：文件号 → HK 编号
+    num_to_hk = {num: hk for hk, num in hk_to_num.items()}
+    # HK 编号的纯数字部分 → 文件号（交叉引用「见第 HK-023 条」时用）
+    hk_digits_to_num = {hk.split("-")[1]: num for hk, num in hk_to_num.items()}
+
     for name in files:
         text = read(os.path.join(BOOK, name))
-        for ref in re.findall(r"见第\s*(\d{3})\s*条", text):
-            if ref not in nums:
+        title = text.split("\n")[0]
+        tm = RE_TITLE_HK.match(title)
+        # 本条目 HK 编号必须在对照表里有登记，且文件号与对照表一致
+        if tm:
+            hk = tm.group(1)
+            if catalog and hk not in catalog:
+                problems["refs"].append(f"{name} 的 HK 编号 {hk} 未登记在 docs/HK编号对照表.md")
+            elif catalog.get(hk) and catalog[hk] != name[:3]:
+                problems["refs"].append(
+                    f"{name} 的 HK 编号 {hk} 在对照表里对应文件号 {catalog[hk]}，与实际文件号不符"
+                )
+        # 交叉引用：既可能写文件号，也可能写 HK 编号（如「见第 HK-023 条」）
+        for ref in RE_REF.findall(text):
+            ok_file = ref in nums
+            ok_hk = ref in hk_digits_to_num and hk_digits_to_num[ref] in nums
+            if not (ok_file or ok_hk):
                 problems["refs"].append(f"{name} 引用了不存在的条目：第 {ref} 条")
+
+    # 对照表标了文件号的行，对应文件必须存在
+    for hk, num in hk_to_num.items():
+        if num not in nums:
+            problems["refs"].append(
+                f"对照表登记 {hk} → {num}，但 book/ 里没有 {num}-*.md"
+            )
+
     # 核实记录是否与条目一一对应
     have = set()
     if os.path.isdir(DOCS):
@@ -111,6 +198,7 @@ def check_refs(files):
     for num in sorted(nums):
         if num not in have:
             problems["refs"].append(f"第 {num} 条缺少对应的核实记录（docs/核实记录/{num}-*.md）")
+    return num_to_hk
 
 
 # ---------------------------------------------------------------- links
@@ -141,10 +229,10 @@ def check_links(files, network=False, timeout=20):
                 if resp.status >= 400:
                     problems["links"].append(
                         f"{url} → HTTP {resp.status}（{','.join(srcs)}）"
-                        f"{'  [可能是反爬，非死链]' if resp.status != 404 else '  [死链]'}"
+                        f"{'  [死链]' if resp.status in (404, 410) else '  [可能是反爬，非死链]'}"
                     )
         except urllib.error.HTTPError as exc:
-            tag = "死链" if exc.code == 404 else "可能是反爬，非死链"
+            tag = "死链" if exc.code in (404, 410) else "可能是反爬，非死链"
             problems["links"].append(
                 f"{url} → HTTP {exc.code}（{','.join(srcs)}）  [{tag}]"
             )
@@ -170,7 +258,7 @@ def check_staleness(files):
     today = date.today()
     for name in files:
         text = read(os.path.join(BOOK, name))
-        m = re.search(r"\*\*最后核实日期\*\*：\s*(\d{4}-\d{2}-\d{2})", text)
+        m = re.search(r"最后核实日期\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})", text)
         if not m:
             problems["staleness"].append(f"{name} 读不出最后核实日期")
             continue
@@ -193,10 +281,11 @@ def check_coverage(files):
     level_a = 0
     for name in files:
         text = read(os.path.join(BOOK, name))
-        body = re.split(r"\*\*常见误传\*\*", text)
+        body = re.split(r"常见误传\*{0,2}", text)
         if len(body) > 1 and len(body[1].strip()) > 40:
             with_misinfo += 1
-        if re.search(r"\*\*证据等级\*\*：\s*A", text):
+        me = RE_EVIDENCE.search(text)
+        if me and me.group(1) == "A":
             level_a += 1
     n = len(files)
     rate_mis = with_misinfo / n * 100
@@ -212,8 +301,8 @@ def check_coverage(files):
 
 # ---------------------------------------------------------------- run
 TITLES = {
-    "schema": "Schema 完整性（11 字段 / 署名 / 标题铁律 / 等级与信源匹配）",
-    "refs": "引用守恒（交叉引用 + 核实记录一一对应）",
+    "schema": "Schema 完整性（12 字段 / 编号方案 A / 成本标签 / 署名 / 等级与信源匹配）",
+    "refs": "引用守恒（交叉引用 + HK 编号与对照表一致 + 核实记录一一对应）",
     "links": "链接巡检（官方链接是否还活着）",
     "promise": "承诺性表述扫描（保录取 / 百分百 / 稳过）",
     "staleness": f"核实时效（{STALE_DAYS} 天红线）",
@@ -238,10 +327,11 @@ def main():
 
     todo = args.only or list(TITLES)
     stats = None
+    num_to_hk = {}
     if "schema" in todo:
         check_schema(files)
     if "refs" in todo:
-        check_refs(files)
+        num_to_hk = check_refs(files)
     if "links" in todo:
         check_links(files, network=args.network)
     if "promise" in todo:
@@ -250,6 +340,11 @@ def main():
         check_staleness(files)
     if "coverage" in todo:
         stats = check_coverage(files)
+
+    if num_to_hk:
+        print("\n编号映射（方案 A）")
+        for num, hk in sorted(num_to_hk.items()):
+            print(f"  · {num} → {hk}")
 
     print()
     for key, title in TITLES.items():
