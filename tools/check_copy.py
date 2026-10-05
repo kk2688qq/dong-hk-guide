@@ -37,6 +37,13 @@ RE_FILE_HINT = re.compile(r"对应\s*(\d{3})")
 IGNORE = {"2026", "2027", "2025", "2024", "10", "05"}
 # 数字前面出现这些字样的，是「编号引用」不是「数字主张」，不查
 RE_NUM_LEAD = re.compile(r"(?:HK-|对应\s*|编号\s*|摘自\s*|见\s*第\s*|`)\s*$")
+# 附录段：不是「发布用文案」，里面的数字常属别的条目 → 一律跳过比对
+# （2026-10-05 修：原本这些段会被按段体里随机出现的 HK 编号错误映射，
+#   例如「未改动项汇总」提到 HK-019 就被映射到 001，把 002 的宿舍数字报成「查不到」）
+RE_APPENDIX = re.compile(
+    r"(未改动项汇总|改动清单|变更清单|修改清单|发布顺序|待办|下一步|附注|备注说明|"
+    r"版本说明|核对说明|定稿说明|免责|使用说明|写作说明)"
+)
 
 
 def known_code_numbers():
@@ -82,35 +89,38 @@ def entry_text(num):
 
 
 def split_sections(text):
-    """按「### 一、HK-019…」这类小标题切段；切不开就整篇当一段。"""
-    marks = [(m.start(), m.group(0)) for m in re.finditer(r"^#{2,4}\s+.*$", text, re.M)]
+    """按小标题切段，并带上层级（便于子节继承父节的条目映射）。"""
+    marks = [(m.start(), m.group(0)) for m in re.finditer(r"^(#{2,4})\s+.*$", text, re.M)]
     if not marks:
-        return [("（全文）", text)]
+        return [("（全文）", text, 2)]
     secs = []
     for i, (pos, title) in enumerate(marks):
+        level = len(title) - len(title.lstrip("#"))
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
-        secs.append((title.strip(), text[pos:end]))
+        secs.append((title.strip(), text[pos:end], level))
     return secs
 
 
-def find_target(sec_title, sec_body, catalog, fallback_hk=None):
-    """定位这一段对应哪条正文：先看段内文件号声明，再看 HK 编号。"""
-    for m in RE_FILE_HINT.finditer(sec_body):
+def find_target(sec_title, sec_body, catalog, inherited=None):
+    """定位这一段对应哪条正文。
+
+    只用**声明式**信息定位，不在段体里乱搜 HK 编号——段体里出现的 HK 编号是
+    「交叉引用」，不代表「本段就属于那条」（2026-10-05 修的错映射根源）。
+    顺序：① 「对应 NNN」声明 → ② 段标题里的 HK 编号 → ③ 继承父节映射。
+    """
+    for m in RE_FILE_HINT.finditer(sec_title + "\n" + sec_body):
         name, txt = entry_text(m.group(1))
         if txt:
             return m.group(1), name, txt
-    for m in RE_HK.finditer(sec_title + "\n" + sec_body):
+    for m in RE_HK.finditer(sec_title):
         hk = "HK-" + m.group(1)
         num = catalog.get(hk)
         if num:
             name, txt = entry_text(num)
             if txt:
                 return num, name, txt
-    if fallback_hk and fallback_hk in catalog:
-        num = catalog[fallback_hk]
-        name, txt = entry_text(num)
-        if txt:
-            return num, name, txt
+    if inherited:
+        return inherited
     return None, None, None
 
 
@@ -153,13 +163,23 @@ def main():
 
     total_missing = 0
     total_checked = 0
-    for title, body in split_sections(text):
-        num, name, entry = find_target(title, body, catalog)
-        if entry is None:
-            # 标题里没有可定位信息，跳过（如「变更清单」「附注」等非文案段）
-            if RE_HK.search(title) or RE_FILE_HINT.search(body):
-                print(f"[无法定位] {title[:50]} —— 段里提到了条目号，但找不到对应正文")
+    current = None          # 当前大节的映射，供其下的子节继承
+    current_level = 0
+    for title, body, level in split_sections(text):
+        if RE_APPENDIX.search(title):
+            print(f"⏭️  {title[:48]}  →（附录段／非发布文案，跳过比对）")
             continue
+        # 子节（层级更深）继承所属大节的条目；大节自己重新定位
+        inherit = current if (current is not None and level > current_level) else None
+        num, name, entry = find_target(title, body, catalog, inherited=inherit)
+        if entry is None:
+            hks = list(dict.fromkeys(re.findall(r"HK-\d{3}", title + "\n" + body)))
+            tip = f"（段内提到 {', '.join(hks)}，可据此人工指认）" if hks else ""
+            print(f"[无法定位] {title[:48]} —— 该段未标注对应条目，请人工确认{tip}"
+                  f"；发布用文案段建议写成「（对应 NNN）」")
+            continue
+        if current is None or level <= current_level:
+            current, current_level = (num, name, entry), level
         nums = digits_to_check(body, codes)
         missing = [
             n for n in nums
