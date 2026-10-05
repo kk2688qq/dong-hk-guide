@@ -1,0 +1,62 @@
+name: build-book
+
+on:
+  push:
+    branches: [main]
+    paths: ["book/**", "README.md", ".github/workflows/book.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain (pandoc + CJK fonts + weasyprint)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc fonts-noto-cjk
+          pip3 install weasyprint
+
+      - name: Merge chapters by number
+        run: |
+          mkdir -p dist
+          ls book/*.md | sort | xargs cat > dist/full.md
+          echo "merged: $(ls book/*.md | wc -l) chapters"
+
+      - name: Build single-file HTML
+        run: |
+          pandoc dist/full.md \
+            --standalone --toc --toc-depth=2 \
+            --metadata title="香港留学指南" \
+            --metadata lang=zh-CN \
+            -o dist/HKStudyGuide.html
+
+      - name: Build EPUB
+        run: |
+          pandoc dist/full.md \
+            --toc --toc-depth=2 \
+            --metadata title="香港留学指南" \
+            --metadata lang=zh-CN \
+            -o dist/HKStudyGuide.epub
+
+      - name: Build PDF
+        run: |
+          python3 -m weasyprint dist/HKStudyGuide.html dist/HKStudyGuide.pdf \
+            || echo "WARN: PDF build failed, skipping (HTML/EPUB unaffected)"
+
+      - name: Upload to fixed release (book-latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: book-latest
+          name: book-latest
+          body: |
+            自动构建于 ${{ github.event.head_commit.timestamp }}。
+            下载链接永久不变，始终指向最新版。
+          files: |
+            dist/HKStudyGuide.html
+            dist/HKStudyGuide.epub
+            dist/HKStudyGuide.pdf
