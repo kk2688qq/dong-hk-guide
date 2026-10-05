@@ -309,18 +309,25 @@ RE_NEGATION = re.compile(
 )
 
 
+def promise_hits(text):
+    """返回正文中「非否定语境」的承诺词（去重）。**唯一真源**——
+    全量扫描与放行判定共用，避免两处判定不一致（2026-10-05 修）。"""
+    hits = []
+    for w in PROMISE_WORDS:
+        for m in re.finditer(re.escape(w), text):
+            lo = max(0, m.start() - 30)
+            hi = min(len(text), m.end() + 30)
+            if RE_NEGATION.search(text[lo:hi]):
+                continue  # 否定语境中的反面引用，不算承诺
+            hits.append(w)
+            break
+    return hits
+
+
 def check_promise(files):
     for name in files:
         text = read(os.path.join(BOOK, name))
-        hits = []
-        for w in PROMISE_WORDS:
-            for m in re.finditer(re.escape(w), text):
-                lo = max(0, m.start() - 30)
-                hi = min(len(text), m.end() + 30)
-                if RE_NEGATION.search(text[lo:hi]):
-                    continue  # 否定语境中的反面引用，不算承诺
-                hits.append(w)
-                break
+        hits = promise_hits(text)
         if hits:
             problems["promise"].append(f"{name} 出现承诺性表述：{'、'.join(hits)}")
 
@@ -422,7 +429,7 @@ def release_list(files):
         for label, pattern in REQUIRED_FIELDS:
             if not re.search(pattern, text):
                 why.append(f"缺字段 {label}")
-        if [w for w in PROMISE_WORDS if w in text]:
+        if promise_hits(text):
             why.append("含承诺性表述")
         if meta.get("num") and meta["num"] != name[:3]:
             why.append("与对照表文件号不一致")
