@@ -3,11 +3,16 @@ name: build-book
 on:
   push:
     branches: [main]
-    paths: ["book/**", "README.md", ".github/workflows/book.yml"]
+    paths: ["book/**", "docs/**", "README.md", ".github/workflows/book.yml"]
   workflow_dispatch:
+  # 手动触发：python tools/check.py --only links --network（链接巡检需要网络）
 
 permissions:
   contents: write
+
+concurrency:
+  group: build-book
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -20,33 +25,103 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pandoc fonts-noto-cjk
           pip3 install weasyprint
+          pandoc --version | head -1
+
+      - name: Quality check (reports only, never blocks the build)
+        # 刻意不挡发布：门禁只管新增内容的质量，不管已发布内容的可用性。
+        # 详见 CLAUDE.md 第五节与 tools/check.py 头部说明。
+        run: |
+          python3 tools/check.py || true
 
       - name: Merge chapters by number
         run: |
+          set -euo pipefail
           mkdir -p dist
-          ls book/*.md | sort | xargs cat > dist/full.md
-          echo "merged: $(ls book/*.md | wc -l) chapters"
+          : > dist/full.md
+          count=0
+          # 用 LC_ALL=C 保证按字节序排序 == 按编号排序（001/002/003…）
+          while IFS= read -r f; do
+            printf '\n\n<!-- ===== %s ===== -->\n\n' "$f" >> dist/full.md
+            cat "$f" >> dist/full.md
+            count=$((count + 1))
+          done < <(ls book/*.md | LC_ALL=C sort)
+          echo "merged: $count chapters"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::book/ 目录里没有任何条目，构建终止"
+            exit 1
+          fi
+
+      - name: Write stylesheet
+        run: |
+          cat > dist/style.html <<'EOF'
+          <style>
+          body{max-width:760px;margin:0 auto;padding:24px 18px;
+               font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+               line-height:1.85;color:#1a1a1a;background:#fff}
+          h1{font-size:1.7em;line-height:1.35;margin:0 0 .2em}
+          h2{font-size:1.28em;margin-top:2em;border-bottom:1px solid #e6e6e6;padding-bottom:.3em}
+          h3{font-size:1.08em;margin-top:1.5em}
+          table{border-collapse:collapse;width:100%;margin:1.2em 0;font-size:.92em}
+          th,td{border:1px solid #ddd;padding:8px 10px;text-align:left;vertical-align:top}
+          th{background:#f6f7f9;font-weight:500}
+          tr:nth-child(even) td{background:#fafbfc}
+          blockquote{margin:1.2em 0;padding:.6em 1em;border-left:3px solid #d0d4da;
+                     background:#f7f8fa;color:#444}
+          code{background:#f2f3f5;padding:.1em .35em;border-radius:3px;font-size:.9em}
+          a{color:#0b5cad;text-decoration:none}
+          hr{border:0;border-top:1px solid #e6e6e6;margin:2.2em 0}
+          @media (prefers-color-scheme:dark){
+            body{color:#e8e8e8;background:#16181c}
+            th{background:#22252b}tr:nth-child(even) td{background:#1b1e23}
+            blockquote{background:#1b1e23;color:#ccc;border-left-color:#3a3f47}
+            code{background:#22252b}hr{border-top-color:#2c3038}th,td{border-color:#2c3038}
+            a{color:#6db3f2}}
+          </style>
+          EOF
 
       - name: Build single-file HTML
         run: |
           pandoc dist/full.md \
             --standalone --toc --toc-depth=2 \
-            --metadata title="香港留学指南" \
-            --metadata lang=zh-CN \
+            --metadata title="董老师香港升学手册" \
+            --metadata lang="zh-HK" \
+            --include-in-header=dist/style.html \
             -o dist/HKStudyGuide.html
 
       - name: Build EPUB
         run: |
           pandoc dist/full.md \
             --toc --toc-depth=2 \
-            --metadata title="香港留学指南" \
-            --metadata lang=zh-CN \
+            --metadata title="董老师香港升学手册" \
+            --metadata lang="zh-HK" \
             -o dist/HKStudyGuide.epub
 
-      - name: Build PDF
+      - name: Build PDF (weasyprint)
         run: |
-          python3 -m weasyprint dist/HKStudyGuide.html dist/HKStudyGuide.pdf \
-            || echo "WARN: PDF build failed, skipping (HTML/EPUB unaffected)"
+          # weasyprint 需要能取到 dist/style.html
+          python3 -m weasyprint \
+            -s dist/style.html \
+            dist/HKStudyGuide.html dist/HKStudyGuide.pdf \
+            || echo "::warning::PDF 构建失败，HTML/EPUB 不受影响"
+
+      - name: Verify outputs exist and are non-trivial
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in dist/HKStudyGuide.html dist/HKStudyGuide.epub; do
+            if [ ! -s "$f" ]; then
+              echo "::error::缺少产物 $f"; fail=1
+            else
+              echo "OK  $f  $(du -h "$f" | cut -f1)"
+            fi
+          done
+          # PDF 允许缺失（weasyprint 可能失败），但若存在则必须非空
+          if [ -s dist/HKStudyGuide.pdf ]; then
+            echo "OK  dist/HKStudyGuide.pdf  $(du -h dist/HKStudyGuide.pdf | cut -f1)"
+          else
+            echo "::warning::PDF 未产出（可接受，HTML/EPUB 已覆盖主要场景）"
+          fi
+          exit $fail
 
       - name: Upload to fixed release (book-latest)
         uses: softprops/action-gh-release@v2
@@ -55,8 +130,10 @@ jobs:
           name: book-latest
           body: |
             自动构建于 ${{ github.event.head_commit.timestamp }}。
-            下载链接永久不变，始终指向最新版。
+            **下载链接永久不变，始终指向最新版。**
           files: |
             dist/HKStudyGuide.html
             dist/HKStudyGuide.epub
             dist/HKStudyGuide.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

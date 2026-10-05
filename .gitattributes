@@ -1,0 +1,9 @@
+# 正文与脚本强制 LF：CI 在 ubuntu 上跑 pandoc，CRLF 会污染合并后的 Markdown
+*.md           text eol=lf
+*.py           text eol=lf
+*.yml          text eol=lf
+*.yaml         text eol=lf
+*.html         text eol=lf
+*.css          text eol=lf
+.gitattributes text eol=lf
+.gitignore     text eol=lf
