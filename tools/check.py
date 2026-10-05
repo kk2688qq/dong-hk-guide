@@ -90,16 +90,24 @@ def read(path):
 
 
 def load_catalog():
-    """读 HK编号对照表 → {HK 编号: 文件号 或 None}。表不存在时返回 None。"""
+    """读 HK编号对照表 → {HK 编号: {num, topic, track, status}}。表不存在时返回 None。"""
     if not os.path.isfile(CATALOG):
         return None
     mapping = {}
     for line in read(CATALOG).splitlines():
-        m = re.match(r"\|\s*(HK-\d{3})\s*\|\s*([^|]*?)\s*\|", line)
+        m = re.match(
+            r"\|\s*(HK-\d{3})\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)",
+            line,
+        )
         if not m:
             continue
-        hk, num = m.group(1), m.group(2).strip()
-        mapping[hk] = num if re.fullmatch(r"\d{3}", num) else None
+        hk, num, topic, track, status = (g.strip() for g in m.groups())
+        mapping[hk] = {
+            "num": num if re.fullmatch(r"\d{3}", num) else None,
+            "topic": topic,
+            "track": track,
+            "status": status,
+        }
     return mapping
 
 
@@ -158,7 +166,7 @@ def check_refs(files):
     if catalog is None:
         problems["refs"].append("docs/HK编号对照表.md 不存在（方案 A 要求对照表入库）")
         catalog = {}
-    hk_to_num = {hk: num for hk, num in catalog.items() if num}
+    hk_to_num = {hk: v["num"] for hk, v in catalog.items() if v["num"]}
     # 反向：文件号 → HK 编号
     num_to_hk = {num: hk for hk, num in hk_to_num.items()}
     # HK 编号的纯数字部分 → 文件号（交叉引用「见第 HK-023 条」时用）
@@ -173,9 +181,9 @@ def check_refs(files):
             hk = tm.group(1)
             if catalog and hk not in catalog:
                 problems["refs"].append(f"{name} 的 HK 编号 {hk} 未登记在 docs/HK编号对照表.md")
-            elif catalog.get(hk) and catalog[hk] != name[:3]:
+            elif catalog.get(hk, {}).get("num") and catalog[hk]["num"] != name[:3]:
                 problems["refs"].append(
-                    f"{name} 的 HK 编号 {hk} 在对照表里对应文件号 {catalog[hk]}，与实际文件号不符"
+                    f"{name} 的 HK 编号 {hk} 在对照表里对应文件号 {catalog[hk]['num']}，与实际文件号不符"
                 )
         # 交叉引用：既可能写文件号，也可能写 HK 编号（如「见第 HK-023 条」）
         for ref in RE_REF.findall(text):
@@ -299,6 +307,97 @@ def check_coverage(files):
     return rate_mis, rate_a
 
 
+# ---------------------------------------------------------------- release
+RE_REVIEWED = re.compile(r"最后核实日期\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})")
+
+
+def release_list(files):
+    """生成「放行候选」表——把「哪条可以出小红书文案」变成机器可判定，不再靠人记。
+
+    放行前置（四条，缺一不放）：
+      1. 该书条目在 book/ 里已有正文；
+      2. 证据等级 A 或 B；
+      3. 有最后核实日期，且未过 90 天红线；
+      4. 工程质检该条自身无问题（12 字段齐全 / 无承诺词 / HK 编号与对照表一致）。
+
+    这样 WB4 出放行单时只需从「可放行」行里挑，不必回头看正文——
+    也就不会再出现「给了 10 条、其中 7 条没有正文」的返工。
+    """
+    catalog = load_catalog() or {}
+    today = date.today()
+    rows = []
+    for name in files:
+        text = read(os.path.join(BOOK, name))
+        title = text.split("\n")[0]
+        tm = RE_TITLE_HK.match(title)
+        hk = tm.group(1) if tm else "—"
+        topic = re.sub(r"^#\s+HK-\d{3}\s+", "", title).strip()
+        meta = catalog.get(hk, {})
+        me = RE_EVIDENCE.search(text)
+        level = me.group(1) if me else "?"
+
+        dm = RE_REVIEWED.search(text)
+        if dm:
+            days = (today - datetime.strptime(dm.group(1), "%Y-%m-%d").date()).days
+            reviewed = f"{dm.group(1)}（{days} 天前）"
+        else:
+            days, reviewed = None, "—"
+
+        misinfo = "有" if len(re.split(r"常见误传\*{0,2}", text)) > 1 and \
+            len(re.split(r"常见误传\*{0,2}", text)[1].strip()) > 40 else "无"
+
+        why = []
+        if hk == "—":
+            why.append("标题缺 HK 编号")
+        if level not in ("A", "B"):
+            why.append(f"证据等级 {level}（需 A/B）")
+        if days is None:
+            why.append("缺最后核实日期")
+        elif days > STALE_DAYS or days < 0:
+            why.append(f"核实日期异常（{days} 天）")
+        for label, pattern in REQUIRED_FIELDS:
+            if not re.search(pattern, text):
+                why.append(f"缺字段 {label}")
+        if [w for w in PROMISE_WORDS if w in text]:
+            why.append("含承诺性表述")
+        if meta.get("num") and meta["num"] != name[:3]:
+            why.append("与对照表文件号不一致")
+
+        rows.append({
+            "hk": hk, "num": name[:3], "topic": topic,
+            "track": meta.get("track", "—"), "level": level,
+            "reviewed": reviewed, "misinfo": misinfo,
+            "ok": not why, "why": "；".join(why),
+        })
+    return rows
+
+
+def render_release(rows):
+    out = [
+        "# 放行候选（自动生成，请勿手改）",
+        "",
+        f"> 由 `tools/check.py --release` 于 {date.today()} 生成。",
+        "> **放行前置四条**：条目已入 `book/` ｜ 证据等级 A/B ｜ 有最后核实日期且未过 90 天 ｜ 工程质检无问题。",
+        "> **放行单怎么出**：从下表的「可放行」行里挑，填最后一列「本轮指定钩子角度」，作为信件回复即可。**每批 3 条**。",
+        "",
+        "| HK 编号 | 文件号 | 主题 | 主线 | 证据等级 | 最后核实 | 误传素材 | 判定 | 本轮指定钩子角度 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for r in rows:
+        mark = "可放行" if r["ok"] else f"不可：{r['why']}"
+        out.append(
+            f"| {r['hk']} | {r['num']} | {r['topic']} | {r['track']} | "
+            f"{r['level']} | {r['reviewed']} | {r['misinfo']} | {mark} |  |"
+        )
+    ready = [r["hk"] for r in rows if r["ok"]]
+    out += [
+        "",
+        f"**可放行 {len(ready)} / 共 {len(rows)} 条**："
+        f"{'、'.join(ready) if ready else '（无）'}",
+    ]
+    return "\n".join(out) + "\n"
+
+
 # ---------------------------------------------------------------- run
 TITLES = {
     "schema": "Schema 完整性（12 字段 / 编号方案 A / 成本标签 / 署名 / 等级与信源匹配）",
@@ -314,6 +413,8 @@ def main():
     ap = argparse.ArgumentParser(description="香港留学指南质检四件套")
     ap.add_argument("--only", nargs="*", choices=list(TITLES), help="只跑指定检查")
     ap.add_argument("--network", action="store_true", help="实际访问链接（慢，默认只统计）")
+    ap.add_argument("--release", action="store_true",
+                    help="生成放行候选表（docs/放行候选.md），供 WB4 出放行单")
     args = ap.parse_args()
 
     files = entries()
@@ -325,7 +426,15 @@ def main():
     for f in files:
         print(f"  · {f}")
 
-    todo = args.only or list(TITLES)
+    if args.release:
+        md = render_release(release_list(files))
+        out_path = os.path.join(ROOT, "docs", "放行候选.md")
+        with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(md)
+        print("\n" + md)
+        print(f"已写入 {out_path}\n")
+
+    todo = args.only or ([] if args.release else list(TITLES))
     stats = None
     num_to_hk = {}
     if "schema" in todo:

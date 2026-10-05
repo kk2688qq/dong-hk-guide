@@ -2,3 +2,5 @@ dist/
 __pycache__/
 *.pyc
 .DS_Store
+# 放行候选表是 check.py --release 的产物，不入库（避免每次生成都产生 diff）
+docs/放行候选.md
