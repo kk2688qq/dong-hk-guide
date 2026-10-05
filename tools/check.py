@@ -67,6 +67,15 @@ RE_EVIDENCE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
 RE_TITLE_HK = re.compile(r"^#\s+(HK-\d{3})\s+\S")
 # 成本标签注释（设计文档 6.4 排序铁律的机器可读形式）
 RE_COST_TAG = re.compile(r"<!--\s*成本标签\s*:")
+# 成本标签值域（设计文档 6.3；2026-10-05 定死，「长/短」作废 → 判例 10）
+COST_DOMAIN = (
+    ("钱", ("0", "少", "多")),
+    ("时间", ("少", "中", "多")),
+    ("精力", ("否", "些", "是")),
+    ("收益", ("大", "中", "小")),
+    ("口径", ("结果", "金钱", "时间精力", "安全合规")),
+)
+RE_COST_KV = re.compile(r"(钱|时间|精力|收益|口径)\s*=\s*(\S+)")
 # 交叉引用：见第 003 条 ／ 见第 HK-023 条
 RE_REF = re.compile(r"见第\s*(?:HK-)?(\d{3})\s*条")
 
@@ -139,8 +148,23 @@ def check_schema(files):
             problems["schema"].append(f"{name} 证据等级格式不对（应形如「证据等级：**A**」）")
         if "本条目由" not in text or "核对" not in text:
             problems["schema"].append(f"{name} 末尾缺「本条目由…核对…」署名")
-        if not RE_COST_TAG.search(text):
+        mt = RE_COST_TAG.search(text)
+        if not mt:
             problems["schema"].append(f"{name} 缺成本标签注释（<!-- 成本标签: 钱=… 时间=… 精力=… 收益=… 口径=… -->）")
+        else:
+            tag_line = text[mt.start():].split("\n", 1)[0]
+            pairs = dict(RE_COST_KV.findall(tag_line))
+            for key, domain in COST_DOMAIN:
+                val = pairs.get(key)
+                if val is None:
+                    problems["schema"].append(
+                        f"{name} 成本标签缺「{key}=」（五要素齐全：钱/时间/精力/收益/口径）"
+                    )
+                elif val not in domain:
+                    problems["schema"].append(
+                        f"{name} 成本标签「{key}={val}」超出值域（设计文档 6.3："
+                        f"{'/'.join(domain)}）——「长/短」已作废，时间一律用「多」"
+                    )
 
         # 证据等级与信源域名是否匹配
         me = RE_EVIDENCE.search(text)
