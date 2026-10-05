@@ -301,10 +301,26 @@ def check_links(files, network=False, timeout=20):
 
 
 # ---------------------------------------------------------------- promise
+# 反面引用豁免：条目主题本身若是「揭穿某类承诺」（如 HK-011 保录不可信、
+# HK-028 误传总汇），词只能出现在否定语境里——此时不计为违规。
+# 判据：命中词前后 30 字符窗口内出现下列否定/警示词之一。
+RE_NEGATION = re.compile(
+    r"不|无|没|假|骗|违规|违法|犯罪|别|切勿|禁止|骗局|不可信|绝无|否认|揭穿|揭"
+)
+
+
 def check_promise(files):
     for name in files:
         text = read(os.path.join(BOOK, name))
-        hits = [w for w in PROMISE_WORDS if w in text]
+        hits = []
+        for w in PROMISE_WORDS:
+            for m in re.finditer(re.escape(w), text):
+                lo = max(0, m.start() - 30)
+                hi = min(len(text), m.end() + 30)
+                if RE_NEGATION.search(text[lo:hi]):
+                    continue  # 否定语境中的反面引用，不算承诺
+                hits.append(w)
+                break
         if hits:
             problems["promise"].append(f"{name} 出现承诺性表述：{'、'.join(hits)}")
 
