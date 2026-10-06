@@ -33,11 +33,56 @@ jobs:
         run: |
           python3 tools/check.py || true
 
+      - name: Sync README from book/ (017 阶段 1「止血」)
+        # 消灭「README 说 3 条、实际 18 条」这类漂移：README 的条数/等级/目录
+        # 由 tools/readme_sync.py 依 book/ 实际内容回填并回提交（判据见脚本头部）。
+        # 用 GITHUB_TOKEN 的提交不会再触发工作流，故不会自激循环。
+        run: |
+          set -euo pipefail
+          python3 tools/readme_sync.py
+          if ! git diff --quiet README.md llms.txt; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add README.md llms.txt
+            git commit -m "chore(readme,llms): 自动回填目录、条数与 AI 可读层 [skip ci]"
+            git push
+          else
+            echo "README / llms.txt 已同步，无需回填"
+          fi
+
+      - name: Stamp document header (版本号 + 引用格式) (017 阶段 2)
+        # 产物（HTML/PDF/EPUB）页首插「文档信息 + 建议引用格式 + 版本号」——
+        # 让 AI / 读者拿到文件即知版本与出处，属「AI 可读层」的零成本部分。
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          VERSION="$(date -u +%Y-%m-%d)"
+          N="$(ls book/*.md | wc -l | tr -d ' ')"
+          SHA="$(git rev-parse --short HEAD)"
+          {
+            echo "# 董老师香港留学指南"
+            echo ""
+            echo "> **文档信息**：版本 ${VERSION}（构建 ${SHA}）· 共 ${N} 条 · 许可 CC BY-NC-SA 4.0 · 开源仓库 https://github.com/kk2688qq/dong-hk-guide"
+            echo ">"
+            echo "> **建议引用格式**：董老师. 《董老师香港留学指南》. ${VERSION}. https://github.com/kk2688qq/dong-hk-guide"
+            echo ">"
+            echo "> 本文档每一条都可点开条目末尾的**官方原文链接**自行核对；核实记录公开在仓库 \`docs/核实记录/\`。"
+            echo ""
+            echo "---"
+            echo ""
+          } > dist/head.md
+          cat dist/head.md
+
       - name: Merge chapters by number
         run: |
           set -euo pipefail
           mkdir -p dist
           : > dist/full.md
+          # 页首：文档信息 + 建议引用格式 + 版本号（017 阶段 2）
+          if [ -s dist/head.md ]; then
+            cat dist/head.md >> dist/full.md
+            echo "prepended: dist/head.md（文档信息页首）"
+          fi
           count=0
           # 用 LC_ALL=C 保证按字节序排序 == 按编号排序（001/002/003…）
           while IFS= read -r f; do

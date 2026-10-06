@@ -43,6 +43,14 @@ WHITELIST_DOMAINS = (
     "hku.hk", "cuhk.edu.hk", "ust.hk", "hkust.edu.hk",
     "polyu.edu.hk", "cityu.edu.hk", "hkbu.edu.hk",
     "hkmu.edu.hk", "ln.edu.hk", "eduhk.hk", "hkse.edu.hk", "hkcc.edu.hk",
+    # .edu.hk 全域：香港教育机构专属二级域名（非商业、非媒体）。
+    # 判据同判例 17——**校方是「本校收生规则／插班安排」的官方一手发布方**
+    # （2026-10-06 增补：中学段 HK-034 引各校官网插班页；此前逐校列举不可扩展）
+    "edu.hk",
+    # 家庭與學校合作事宜委員會（CHSC）：《中學概覽》的官方出版方，
+    # 其秘书处由教育局支援，政府一站通与教育局官方页均以官方入口链接之。
+    # 判据同判例 17（《中學概覽》是香港中学名录的官方一手来源）——2026-10-06 增补（HK-040）
+    "chsc.hk",
 )
 # 内容分发渠道（可写进正文，不是依据来源）
 CHANNELS = ("zhihu.com", "xiaohongshu.com", "douyin.com", "mp.weixin.qq.com")
@@ -55,7 +63,9 @@ PROMISE_WORDS = (
 # v1.3 12 字段（字段 1「编号 + 标题」由标题正则单独校验，字段 10/11 为合并字段）
 # 2026-10-06：字段 3 由「口径 + 性价比档」换为「解决什么焦虑 + 风险等级 + 决策阶段」（判例 16）
 REQUIRED_FIELDS = (
-    ("2 适用人群 + 阶段", r"适用人群\s*\+\s*阶段"),
+    # 2026-10-06 WB4 016 裁定（A 方案）：字段 3 是唯一「决策阶段」字段，
+    # 字段 2 原「+ 阶段」那行并入字段 3 括注 → 字段 2 改名为「适用人群 + 入学年度」
+    ("2 适用人群 + 入学年度", r"适用人群\s*\+\s*入学年度"),
     ("3 解决什么焦虑 + 风险等级 + 决策阶段", r"解决什么焦虑\s*\+\s*风险等级\s*\+\s*决策阶段"),
     ("4 要花什么", r"要花什么"),
     ("5 换回什么", r"换回什么"),
@@ -71,6 +81,9 @@ REQUIRED_FIELDS = (
 RE_EVIDENCE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
 # 标题（方案 A）：必须以 HK 编号开头
 RE_TITLE_HK = re.compile(r"^#\s+(HK-\d{3})\s+\S")
+# 仅用于「剥掉标头」，不含 \S —— 否则标题正文首个字符若是数字（如「2026 …」）会被误吞，
+# 残留三位数字被下面的 \b\d{3}\b 误判成「文件号」（2026-10-06 修，原来只有 ^#\s+(HK-\d{3})\s+\S）。
+RE_TITLE_PREFIX = re.compile(r"^#\s+HK-\d{3}\s+")
 # 风险导向注释（字段 3 的机器可读形式，供排序使用；2026-10-06 取代成本标签 → 判例 16）
 RE_RISK_TAG = re.compile(r"<!--\s*风险\s*=")
 # 风险导向三字段值域（2026-10-06 定死，取代原成本标签五项）
@@ -148,7 +161,7 @@ def check_schema(files):
                 f"{name} 标题未按方案 A 起头（应形如「# HK-019 标题」）：{title[:40]}"
             )
         else:
-            rest = RE_TITLE_HK.sub("", title).strip()
+            rest = RE_TITLE_PREFIX.sub("", title).strip()
             if re.search(r"\b\d{3}\b", rest):
                 problems["schema"].append(
                     f"{name} 标题里出现了文件号（方案 A 要求文件号不进标题）：{title[:40]}"

@@ -4,3 +4,7 @@ __pycache__/
 .DS_Store
 # 放行候选表是 check.py --release 的产物，不入库（避免每次生成都产生 diff）
 docs/放行候选.md
+# 采集期的临时工作区（下载的官方 PDF 与中间件，18M），不入库；
+# 证据以「出处链接 + 段落号」形式落在 docs/核实记录/ 与 docs/信源勘察/，可随时重新下载复现
+_stage/
+_tmp/
