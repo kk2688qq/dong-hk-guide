@@ -48,9 +48,10 @@ PROMISE_WORDS = (
 )
 
 # v1.3 12 字段（字段 1「编号 + 标题」由标题正则单独校验，字段 10/11 为合并字段）
+# 2026-10-06：字段 3 由「口径 + 性价比档」换为「解决什么焦虑 + 风险等级 + 决策阶段」（判例 16）
 REQUIRED_FIELDS = (
     ("2 适用人群 + 阶段", r"适用人群\s*\+\s*阶段"),
-    ("3 口径 + 性价比档", r"口径\s*\+\s*性价比档"),
+    ("3 解决什么焦虑 + 风险等级 + 决策阶段", r"解决什么焦虑\s*\+\s*风险等级\s*\+\s*决策阶段"),
     ("4 要花什么", r"要花什么"),
     ("5 换回什么", r"换回什么"),
     ("6 说人话", r"说人话"),
@@ -65,19 +66,23 @@ REQUIRED_FIELDS = (
 RE_EVIDENCE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
 # 标题（方案 A）：必须以 HK 编号开头
 RE_TITLE_HK = re.compile(r"^#\s+(HK-\d{3})\s+\S")
-# 成本标签注释（设计文档 6.4 排序铁律的机器可读形式）
-RE_COST_TAG = re.compile(r"<!--\s*成本标签\s*:")
-# 成本标签值域（设计文档 6.3；2026-10-05 定死，「长/短」作废 → 判例 10）
-COST_DOMAIN = (
-    ("钱", ("0", "少", "多")),
-    ("时间", ("少", "中", "多")),
-    ("精力", ("否", "些", "是")),
-    ("收益", ("大", "中", "小")),
-    ("口径", ("结果", "金钱", "时间精力", "安全合规")),
+# 风险导向注释（字段 3 的机器可读形式，供排序使用；2026-10-06 取代成本标签 → 判例 16）
+RE_RISK_TAG = re.compile(r"<!--\s*风险\s*=")
+# 风险导向三字段值域（2026-10-06 定死，取代原成本标签五项）
+RISK_DOMAIN = (
+    ("风险", ("高", "中", "低")),
+    ("阶段", ("要不要去", "怎么申请", "怎么选", "怎么落地")),
+    ("焦虑", ("防骗", "确定性", "落地", "取舍")),
 )
-RE_COST_KV = re.compile(r"(钱|时间|精力|收益|口径)\s*=\s*(\S+)")
-# 性价比档（字段 3 的文本形式），用于与成本标签做 6.4 一致性校验（判例 11）
-RE_TIER = re.compile(r"性价比档\*{0,2}\s*[:：]\s*\*{0,2}\s*(极高|高|一般)")
+RE_RISK_KV = re.compile(r"(风险|阶段|焦虑)\s*=\s*([^\s>]+)")
+# 正文「解决什么焦虑 + 风险等级 + 决策阶段」段里的取值（与注释做一致性校验 → 判例 16）
+RE_SEC_RISK = re.compile(r"风险等级\*{0,2}\s*[:：]\s*\*{0,2}(高|中|低)")
+RE_SEC_ANX = re.compile(r"解决什么焦虑\*{0,2}\s*[:：]\s*\*{0,2}(防骗|确定性|落地|取舍)")
+RE_SEC_STAGE = re.compile(r"决策阶段\*{0,2}\s*[:：]\s*\*{0,2}(要不要去|怎么申请|怎么选|怎么落地)")
+SEC_FIELD_NAME = {"风险": "风险等级", "焦虑": "解决什么焦虑", "阶段": "决策阶段"}
+# 放行候选排序权重（风险优先，同风险按决策阶段 → 判例 16）
+RISK_ORDER = {"高": 0, "中": 1, "低": 2}
+STAGE_ORDER = {"要不要去": 0, "怎么申请": 1, "怎么选": 2, "怎么落地": 3}
 # 交叉引用：见第 003 条 ／ 见第 HK-023 条
 RE_REF = re.compile(r"见第\s*(?:HK-)?(\d{3})\s*条")
 
@@ -150,44 +155,40 @@ def check_schema(files):
             problems["schema"].append(f"{name} 证据等级格式不对（应形如「证据等级：**A**」）")
         if "本条目由" not in text or "核对" not in text:
             problems["schema"].append(f"{name} 末尾缺「本条目由…核对…」署名")
-        mt = RE_COST_TAG.search(text)
+        mt = RE_RISK_TAG.search(text)
         if not mt:
-            problems["schema"].append(f"{name} 缺成本标签注释（<!-- 成本标签: 钱=… 时间=… 精力=… 收益=… 口径=… -->）")
+            problems["schema"].append(
+                f"{name} 缺风险导向注释（<!-- 风险=高|中|低 阶段=… 焦虑=… -->，判例 16）"
+            )
         else:
             tag_line = text[mt.start():].split("\n", 1)[0]
-            pairs = dict(RE_COST_KV.findall(tag_line))
-            for key, domain in COST_DOMAIN:
+            pairs = dict(RE_RISK_KV.findall(tag_line))
+            for key, domain in RISK_DOMAIN:
                 val = pairs.get(key)
                 if val is None:
                     problems["schema"].append(
-                        f"{name} 成本标签缺「{key}=」（五要素齐全：钱/时间/精力/收益/口径）"
+                        f"{name} 风险导向注释缺「{key}=」（三要素齐全：风险/阶段/焦虑）"
                     )
                 elif val not in domain:
                     problems["schema"].append(
-                        f"{name} 成本标签「{key}={val}」超出值域（设计文档 6.3："
-                        f"{'/'.join(domain)}）——「长/短」已作废，时间一律用「多」"
+                        f"{name} 风险导向注释「{key}={val}」超出值域（{'/'.join(domain)}）"
                     )
-            # 成本标签 ↔ 性价比档 内部一致性（设计文档 6.4 合成规则）
-            # 极高 ⇔ 收益大 且 三项成本全为零；两个方向都要查（判例 11）
-            mtier = RE_TIER.search(text)
-            if mtier:
-                tier = mtier.group(1)
-                zero_cost = (
-                    pairs.get("钱") == "0"
-                    and pairs.get("时间") == "少"
-                    and pairs.get("精力") == "否"
-                )
-                big_gain = pairs.get("收益") == "大"
-                if tier == "极高" and not (zero_cost and big_gain):
+            # 注释 ↔ 正文段 一致性（判例 16；取代原「成本标签 ↔ 性价比档」合成校验）
+            sec = {
+                "风险": RE_SEC_RISK.search(text),
+                "焦虑": RE_SEC_ANX.search(text),
+                "阶段": RE_SEC_STAGE.search(text),
+            }
+            for key in ("风险", "焦虑", "阶段"):
+                mv = sec[key]
+                if pairs.get(key) and not mv:
                     problems["schema"].append(
-                        f"{name} 性价比档＝极高，但成本标签不是「钱=0 时间=少 精力=否 收益=大」"
-                        f"（现为 {' '.join(f'{k}={pairs.get(k)}' for k, _ in COST_DOMAIN)}）"
-                        f"——6.4 规定极高＝收益大且三项成本全为零，见判例 10、11"
+                        f"{name} 正文缺「{SEC_FIELD_NAME[key]}：…」（注释已写 {key}={pairs[key]}）"
                     )
-                if tier != "极高" and zero_cost and big_gain:
+                elif mv and pairs.get(key) and mv.group(1) != pairs[key]:
                     problems["schema"].append(
-                        f"{name} 成本标签是「钱=0 时间=少 精力=否 收益=大」（三项全零＋收益大），"
-                        f"按 6.4 性价比档应为「极高」，现为「{tier}」"
+                        f"{name} 注释与正文不一致：注释 {key}={pairs[key]}，"
+                        f"正文 {SEC_FIELD_NAME[key]}={mv.group(1)}"
                     )
 
         # 证据等级与信源域名是否匹配
@@ -389,8 +390,9 @@ def release_list(files):
       1. 该书条目在 book/ 里已有正文；
       2. 证据等级 A 或 B；
       3. 有最后核实日期，且未过 90 天红线；
-      4. 工程质检该条自身无问题（12 字段齐全 / 无承诺词 / HK 编号与对照表一致）。
+      4. 工程质检该条自身无问题（12 字段齐全 / 风险导向注释在 / 无承诺词 / HK 编号与对照表一致）。
 
+    输出按「风险等级优先、同风险按决策阶段」排序（判例 16）。
     这样 WB4 出放行单时只需从「可放行」行里挑，不必回头看正文——
     也就不会再出现「给了 10 条、其中 7 条没有正文」的返工。
     """
@@ -417,6 +419,12 @@ def release_list(files):
         misinfo = "有" if len(re.split(r"常见误传\*{0,2}", text)) > 1 and \
             len(re.split(r"常见误传\*{0,2}", text)[1].strip()) > 40 else "无"
 
+        # 字段 3：风险导向注释（判例 16）
+        mtag = RE_RISK_TAG.search(text)
+        tag_line = text[mtag.start():].split("\n", 1)[0] if mtag else ""
+        rk = dict(RE_RISK_KV.findall(tag_line))
+        risk, stage = rk.get("风险", "—"), rk.get("阶段", "—")
+
         why = []
         if hk == "—":
             why.append("标题缺 HK 编号")
@@ -429,6 +437,8 @@ def release_list(files):
         for label, pattern in REQUIRED_FIELDS:
             if not re.search(pattern, text):
                 why.append(f"缺字段 {label}")
+        if not mtag:
+            why.append("缺风险导向注释")
         if promise_hits(text):
             why.append("含承诺性表述")
         if meta.get("num") and meta["num"] != name[:3]:
@@ -437,9 +447,16 @@ def release_list(files):
         rows.append({
             "hk": hk, "num": name[:3], "topic": topic,
             "track": meta.get("track", "—"), "level": level,
+            "risk": risk, "stage": stage,
             "reviewed": reviewed, "misinfo": misinfo,
             "ok": not why, "why": "；".join(why),
         })
+    # 排序：风险等级优先（高→中→低），同风险按决策阶段（判例 16）
+    rows.sort(key=lambda r: (
+        RISK_ORDER.get(r["risk"], 9),
+        STAGE_ORDER.get(r["stage"], 9),
+        r["num"],
+    ))
     return rows
 
 
@@ -449,15 +466,16 @@ def render_release(rows):
         "",
         f"> 由 `tools/check.py --release` 于 {date.today()} 生成。",
         "> **放行前置四条**：条目已入 `book/` ｜ 证据等级 A/B ｜ 有最后核实日期且未过 90 天 ｜ 工程质检无问题。",
+        "> **排序规则**（判例 16）：风险等级优先（高→中→低），同风险按决策阶段（要不要去→怎么申请→怎么选→怎么落地）。",
         "> **放行单怎么出**：从下表的「可放行」行里挑，填最后一列「本轮指定钩子角度」，作为信件回复即可。**每批 3 条**。",
         "",
-        "| HK 编号 | 文件号 | 主题 | 主线 | 证据等级 | 最后核实 | 误传素材 | 判定 | 本轮指定钩子角度 |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| 风险 | 阶段 | HK 编号 | 文件号 | 主题 | 主线 | 证据等级 | 最后核实 | 误传素材 | 判定 | 本轮指定钩子角度 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for r in rows:
         mark = "可放行" if r["ok"] else f"不可：{r['why']}"
         out.append(
-            f"| {r['hk']} | {r['num']} | {r['topic']} | {r['track']} | "
+            f"| {r['risk']} | {r['stage']} | {r['hk']} | {r['num']} | {r['topic']} | {r['track']} | "
             f"{r['level']} | {r['reviewed']} | {r['misinfo']} | {mark} |  |"
         )
     ready = [r["hk"] for r in rows if r["ok"]]
@@ -471,7 +489,7 @@ def render_release(rows):
 
 # ---------------------------------------------------------------- run
 TITLES = {
-    "schema": "Schema 完整性（12 字段 / 编号方案 A / 成本标签 / 署名 / 等级与信源匹配）",
+    "schema": "Schema 完整性（12 字段 / 编号方案 A / 风险导向注释 / 署名 / 等级与信源匹配）",
     "refs": "引用守恒（交叉引用 + HK 编号与对照表一致 + 核实记录一一对应）",
     "links": "链接巡检（官方链接是否还活着）",
     "promise": "承诺性表述扫描（保录取 / 百分百 / 稳过）",
