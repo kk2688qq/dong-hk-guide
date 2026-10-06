@@ -34,6 +34,11 @@ WHITELIST_DOMAINS = (
     "immd.gov.hk", "edb.gov.hk", "ugc.edu.hk", "info.gov.hk",
     "gov.hk", "elegislation.gov.hk", "censtatd.gov.hk",
     "hkengage.gov.hk", "crossboundaryservices.gov.hk",
+    # 「大学联招办法」（JUPAS）官方门户：大学联招处运营的联招一手来源，
+    # 教育局 SNDAS 页亦以官方网页引用之（2026-10-06 加入，中学段 HK-031/032/037 适用）
+    "jupas.edu.hk",
+    # 香港考试及评核局（文凭试官方）
+    "hkeaa.edu.hk",
     # 大学官网（注意：各校招生页常用独立子域，如 join.hkust.edu.hk）
     "hku.hk", "cuhk.edu.hk", "ust.hk", "hkust.edu.hk",
     "polyu.edu.hk", "cityu.edu.hk", "hkbu.edu.hk",
