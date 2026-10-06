@@ -29,7 +29,10 @@ BOOK = os.path.join(ROOT, "book")
 CATALOG = os.path.join(ROOT, "docs", "HK编号对照表.md")
 
 # 数字：3 位以上（含千位逗号）。两位以内的数字（如「3 倍」「7 年」）噪声太大，不查。
-RE_NUM = re.compile(r"\d[\d,]{2,}")
+# 数字主张：≥3 位整数（滤掉「2 倍」「3 条」这类小数字噪声）+ **带小数点的数**
+# （2026-10-06 小红书 112 反馈补：倍数列 4.6/4.65/5.05/5.25/5.3、百分数 85.6/91.5
+#   只有 1–2 位整数部分，被 ≥3 位口径整类漏掉——而「取整的 5 倍」正是判例 8 的高危区）
+RE_NUM = re.compile(r"\d[\d,]{2,}|\d+\.\d+")
 RE_HK = re.compile(r"HK-(\d{3})")
 # 「对应 001」这类声明（文案里作者自己标的对应关系）
 RE_FILE_HINT = re.compile(r"对应\s*(\d{3})")
@@ -38,7 +41,8 @@ IGNORE = {"2026", "2027", "2025", "2024", "10", "05"}
 # 数字前面出现这些字样的，是「编号引用」不是「数字主张」，不查
 # （ID(C)1026＝官方指南版本号、国标码 81002＝院校代码——都是编号，2026-10-06 补）
 RE_NUM_LEAD = re.compile(
-    r"(?:HK-|对应\s*|编号\s*|摘自\s*|见\s*第\s*|ID\s*\([A-Z]\)\s*|国标码\s*|`)\s*$"
+    r"(?:HK-|对应\s*|编号\s*|摘自\s*|见\s*第\s*|ID\s*\([A-Z]\)\s*|国标码\s*|"
+    r"版本\s*|§\s*|v\s*|`)\s*$"  # 版本号/条款号前缀（小数口径补收后需一并豁免）
 )
 # 附录段：不是「发布用文案」，里面的数字常属别的条目 → 一律跳过比对
 # （2026-10-05 修：原本这些段会被按段体里随机出现的 HK 编号错误映射，
@@ -127,6 +131,27 @@ def find_target(sec_title, sec_body, catalog, inherited=None):
     return None, None, None
 
 
+def wan_variants(n):
+    """金额「万」口径换算候选（封面规范 v3 第 5 条唯一允许的换算）。
+
+    `4.95万` → 正文原样写 `49,500`；`1.5万` → `15,000`。仅当数字后**紧跟「万」**时启用，
+    倍数（4.6 倍）、百分比（85.6%）一律不豁免——那是判例 8 要拦的取整高危区。
+    """
+    try:
+        v = int(round(float(n.replace(",", "")) * 10000))
+    except ValueError:
+        return []
+    return [f"{v:,}", str(v)]
+
+
+def digit_found(n, body, entry):
+    """数字 n 是否能在该条正文里找到（含金额万口径换算豁免）。"""
+    cands = [n]
+    if re.search(re.escape(n) + r"\s*万", body):
+        cands += wan_variants(n)
+    return any(c in entry or c.replace(",", "") in entry.replace(",", "") for c in cands)
+
+
 def digits_to_check(body, codes):
     """挑出这一段里真正需要核的「数字主张」：排除年份、编号引用、条目编号。"""
     out = []
@@ -184,10 +209,7 @@ def main():
         if current is None or level <= current_level:
             current, current_level = (num, name, entry), level
         nums = digits_to_check(body, codes)
-        missing = [
-            n for n in nums
-            if n not in entry and n.replace(",", "") not in entry.replace(",", "")
-        ]
+        missing = [n for n in nums if not digit_found(n, body, entry)]
         total_checked += len(nums)
         total_missing += len(missing)
         flag = "✅" if not missing else "⚠️"
