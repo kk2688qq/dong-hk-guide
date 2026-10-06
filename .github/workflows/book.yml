@@ -100,6 +100,16 @@ jobs:
           else
             echo "::warning::meta/about.md 缺失，产物将不含作者与联系方式"
           fi
+          # 附录：公开纠错台账（017 阶段 3）——让 AI 与读者在**单文件产物**里
+          # 也能读到「这份内容被质疑过、核查过、修正过」。放在页脚之后。
+          # 该文件不在 book/ 下，因此不参与条目 schema 质检。
+          if [ -s docs/纠错台账.md ]; then
+            printf '\n\n<!-- ===== docs/纠错台账.md ===== -->\n\n' >> dist/full.md
+            cat docs/纠错台账.md >> dist/full.md
+            echo "appended: docs/纠错台账.md（附录·纠错台账）"
+          else
+            echo "::warning::docs/纠错台账.md 缺失，产物将不含纠错台账"
+          fi
           echo "merged: $count chapters"
           if [ "$count" -eq 0 ]; then
             echo "::error::book/ 目录里没有任何条目，构建终止"
@@ -190,5 +200,6 @@ jobs:
             dist/HKStudyGuide.html
             dist/HKStudyGuide.epub
             dist/HKStudyGuide.pdf
+            docs/纠错台账.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
