@@ -28,7 +28,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pandoc fonts-noto-cjk
-          pip3 install weasyprint
+          pip3 install weasyprint markdown
           pandoc --version | head -1
 
       - name: Quality check (reports only, never blocks the build)
@@ -133,14 +133,31 @@ jobs:
           cp assets/book-style.html dist/style.html
           echo "stylesheet: $(wc -c < dist/style.html) 字节（来自 assets/book-style.html）"
 
-      - name: Build single-file HTML
+      - name: Build single-file HTML（读者视图，自包含可离线）
+        # 对照《高性价比人生指南》的产物形态：可下载的 HTML 不是「一本线性书」，
+        # 而是**一个能搜、能筛、能折叠的阅读器**——双击就开、断网可用、可直接转发。
+        # 卡片是服务端渲染的静态 HTML（不依赖 JS 也能读全文），AI 与搜索引擎都能抓。
         run: |
+          set -euo pipefail
+          VERSION="$(date -u +%Y-%m-%d)"
+          SHA="$(git rev-parse --short HEAD)"
+          python3 tools/build_reader.py \
+            --out dist --name HKStudyGuide.html \
+            --offline --stamp "${VERSION}（构建 ${SHA}）"
+          test -s dist/HKStudyGuide.html
+
+      - name: Build print HTML（PDF 专用，pandoc 线性排版）
+        # 阅读器是交互界面，不适合直接喂 weasyprint；PDF 走单独的线性打印版，
+        # 样式仍是 assets/book-style.html（与阅读器同源的中文排版规则）。
+        run: |
+          set -euo pipefail
           pandoc dist/full.md \
             --standalone --toc --toc-depth=2 \
             --metadata title="董老师香港升学手册" \
             --metadata lang="zh-Hans" \
             --include-in-header=dist/style.html \
-            -o dist/HKStudyGuide.html
+            -o dist/print.html
+          test -s dist/print.html
 
       - name: Build EPUB
         run: |
@@ -152,10 +169,10 @@ jobs:
 
       - name: Build PDF (weasyprint)
         run: |
-          # weasyprint 需要能取到 dist/style.html
+          # weasyprint 读 PDF 专用的线性打印版 dist/print.html
           python3 -m weasyprint \
             -s dist/style.html \
-            dist/HKStudyGuide.html dist/HKStudyGuide.pdf \
+            dist/print.html dist/HKStudyGuide.pdf \
             || echo "::warning::PDF 构建失败，HTML/EPUB 不受影响"
 
       - name: Verify outputs exist and are non-trivial
@@ -251,6 +268,10 @@ jobs:
           SITE_BOOK_HTML: dist/HKStudyGuide.html
         run: |
           python3 tools/build_site.py
+          # 首页换成「读者视图」（与 Release 里那份可下载 HTML 同一个阅读器）：
+          # 卡片 + 说人话为主角 + 折叠明细 + 筛选；条目页 entry-HK-*.html 保留，
+          # 深链不失效。build_site 出的旧 index.html 被这一步覆盖。
+          python3 tools/build_reader.py --out site --name index.html
           echo "--- site 产物 ---"
           ls -la site | head -20
           test -s site/index.html
