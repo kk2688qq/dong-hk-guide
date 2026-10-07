@@ -1,11 +1,11 @@
 {
  "generated": "2026-10-07",
- "source_commit": "052d86e",
+ "source_commit": "136274e",
  "repo": "https://github.com/kk2688qq/dong-hk-guide",
  "purpose": "小红书文案逐数字自查包（判例 8 双向比对的正方向数据；WB4-010 裁定 W1=C3 落地件）",
  "rule": "文案每个数字必须能在对应条目正文原样找到，不许四舍五入/取整/换算；唯一例外是**金额「万」口径**（封面规范 v3 第 5 条）：`49,500` 可写 `4.95万`、`250,000` 可写 `25万`——只有数字后紧跟「万」时成立，倍数/百分比一律不豁免；打假句也不写正文没有的具体数字（判例 14），改写错数字的「类别」。",
  "usage": "文案定稿前自查三步：① 按文案里标注的「对应 HK-0XX」在本包 entries 里找到该条目；② 把文案里出现的数字（≥3 位，年份/条目编号除外）逐个在 digits[].n 里找原样数字；③ 数字在 → 再用 ctx 核对口径（是否同一个口径：本地生 vs 非本地生、哪一学年、单位是万还是元）。查不到、或口径对不上 → 记下「数字 + 所在句子 + 对应 HK」，提交 WB4 转 WB2，不要自行改数字。本包是快照：正文更新后 WB2 会重出新包，以 generated / source_commit 为准。",
- "entry_count": 48,
+ "entry_count": 49,
  "entries": {
   "HK-019": {
    "file": "001-高才通A类收入门槛.md",
@@ -1849,6 +1849,74 @@
    "url": "https://github.com/kk2688qq/dong-hk-guide/blob/main/book/050-读国际课程的学生申港校和高考生不是同一条路.md",
    "digit_count": 0,
    "digits": []
+  },
+  "HK-051": {
+   "file": "051-A-Level、IB、AP申港校官方到底有没有偏好.md",
+   "title": "HK-051 A-Level、IB、AP 申港校，官方到底有没有偏好",
+   "url": "https://github.com/kk2688qq/dong-hk-guide/blob/main/book/051-A-Level、IB、AP申港校官方到底有没有偏好.md",
+   "digit_count": 15,
+   "digits": [
+    {
+     "n": "1190",
+     "ctx": "…a ≥3 门 AL 合格 SAT ≥1190 ＋ 2 门 AP（各 3 分以上），或 5 门…"
+    },
+    {
+     "n": "1380",
+     "ctx": "…32 3A 3AP（3 分）＋SAT 1380，或 5AP（3 分） 工商管理（BBA）…"
+    },
+    {
+     "n": "1470",
+     "ctx": "…36 3A 4AP（5 分）＋SAT 1470，或 4AP（5 分）＋2AP（4 分） 法学（…"
+    },
+    {
+     "n": "1520",
+     "ctx": "…3A 4AP（5 分）＋SAT 1520，或 6AP（5 分） 内外全科医学士（MBBS…"
+    },
+    {
+     "n": "1480",
+     "ctx": "…— 4A 6AP（5 分）＋SAT 1480 官方还给了「往年录到的区间」（比「最低门…"
+    },
+    {
+     "n": "1540",
+     "ctx": "…Intake 中位五成区间）：SAT 1480–1540｜GCEAL 144–168（约 AAA 至…"
+    },
+    {
+     "n": "144",
+     "ctx": "…：SAT 1480–1540｜GCEAL 144–168（约 AAA 至 3A）｜IB 35…"
+    },
+    {
+     "n": "168",
+     "ctx": "…T 1480–1540｜GCEAL 144–168（约 AAA 至 3A）｜IB 35–40…"
+    },
+    {
+     "n": "1460",
+     "ctx": "…26 Entry，25–75 百分位）：SAT 1460–1540｜GCE 128–160｜IB…"
+    },
+    {
+     "n": "128",
+     "ctx": "…）：SAT 1460–1540｜GCE 128–160｜IB 30–34。 官方明说…"
+    },
+    {
+     "n": "160",
+     "ctx": "…SAT 1460–1540｜GCE 128–160｜IB 30–34。 官方明说「达门槛…"
+    },
+    {
+     "n": "520",
+     "ctx": "…3A 4AP（5 分）＋SAT 1520，或 6AP（5 分） 内外全科医学士（MBBS…"
+    },
+    {
+     "n": "2576",
+     "ctx": "…/admissions/ug/f/upload/520/2576/Admission%20Information_Int…"
+    },
+    {
+     "n": "10334",
+     "ctx": "…www.cb.cityu.edu.hk/ef/doc/U10334%20EF_Info%20Day%20brochure%…"
+    },
+    {
+     "n": "202024",
+     "ctx": "…%20EF_Info%20Day%20brochure%202024%20for%20upload.pdf 最后核实…"
+    }
+   ]
   },
   "HK-052": {
    "file": "052-读国际课程的学生申请时间线首轮比高考通道早约半年.md",
