@@ -139,6 +139,13 @@ RISK_ORDER = {"高": 0, "中": 1, "低": 2}
 STAGE_ORDER = {"要不要去": 0, "怎么申请": 1, "怎么选": 2, "怎么落地": 3}
 # 交叉引用：见第 003 条 ／ 见第 HK-023 条
 RE_REF = re.compile(r"见第\s*(?:HK-)?(\d{3})\s*条")
+# 相对链接：book/ 内**不应出现**——单文件 HTML / PDF / EPUB 一离开仓库就 404，
+# 故正文一律写纯文本「第 HK-xxx 条」（2026-10-07 WB4-027 定，仓库侧已清零）。
+RE_RELLINK = re.compile(r"\]\((?:\./|\.\./)")
+# 错号判据（2026-10-07 WB4-027）：`[HK-008](./008-….md)` 的**链接文字**必须是
+# **被链文件正文首行的真实 HK 编号**。文件号（三位顺延号）与 HK 编号本来就错位
+# （001=HK-019、008=HK-006、011=HK-009…），照文件名写编号必错——041 就踩过。
+RE_HK_LINK = re.compile(r"\[(HK-\d{3})\]\(\./(\d{3})-")
 
 STALE_DAYS = 90
 # 部分大学官网会拒绝非浏览器 UA（返回 403），巡检必须带上浏览器标识
@@ -295,6 +302,24 @@ def check_refs(files):
             ok_hk = ref in hk_digits_to_num and hk_digits_to_num[ref] in nums
             if not (ok_file or ok_hk):
                 problems["refs"].append(f"{name} 引用了不存在的条目：第 {ref} 条")
+        # 相对链接零容忍（离开仓库即 404）
+        if RE_RELLINK.search(text):
+            problems["refs"].append(
+                f"{name} 出现相对链接（单文件 / PDF / EPUB 离开仓库即 404，应写成纯文本「第 HK-xxx 条」）"
+            )
+        # 链接文字必须是被链文件的真实 HK 编号（WB4-027 的错号类）
+        for m in RE_HK_LINK.finditer(text):
+            text_hk, num = m.group(1), m.group(2)
+            real = num_to_hk.get(num)
+            if real is None:
+                problems["refs"].append(
+                    f"{name} 的链接 {m.group(0)}）指向不存在的文件 {num}-*.md"
+                )
+            elif real != text_hk:
+                problems["refs"].append(
+                    f"{name} 的链接文字 {text_hk} 与被链文件 {num}-*.md 的真实编号 {real} 不符"
+                    f"（{m.group(0)}）"
+                )
 
     # 对照表标了文件号的行，对应文件必须存在
     for hk, num in hk_to_num.items():
