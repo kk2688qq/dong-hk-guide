@@ -1,0 +1,195 @@
+<style>
+/* ============================================================
+   董老师香港升学手册 · 单文件产物样式（HTML + EPUB + PDF 同源）
+   由 .github/workflows/book.yml 通过 --include-in-header 注入。
+   排在 pandoc 默认样式之后，同权重规则以本文件为准。
+   ============================================================ */
+
+/* ---------- 版心与基础排版 ---------- */
+html { font-size: 16px; }
+body {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 30px 22px 90px;
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+               "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+  line-height: 1.9;
+  color: #24292f;
+  background: #fff;
+  word-break: break-word;
+}
+p { margin: .85em 0; text-align: justify; }
+em { font-style: normal; background: linear-gradient(transparent 62%, #ffe9a8 62%); }
+
+/* ---------- 书名与目录 ---------- */
+h1.title {
+  text-align: center;
+  font-size: 2em;
+  line-height: 1.4;
+  margin: .4em 0 .1em;
+  border: 0;
+  padding: 0;
+}
+p.subtitle { text-align: center; color: #6b7686; margin: 0 0 1.6em; }
+
+nav#TOC {
+  background: #f7f9fc;
+  border: 1px solid #e3e8ef;
+  border-radius: 12px;
+  padding: 20px 26px 22px;
+  margin: 1.6em 0 2.6em;
+}
+nav#TOC::before {
+  content: "目录";
+  display: block;
+  font-weight: 700;
+  font-size: 1.12em;
+  color: #12406e;
+  margin-bottom: .5em;
+}
+nav#TOC ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  columns: 2;
+  column-gap: 42px;
+}
+nav#TOC ul ul { columns: auto; padding-left: 1.15em; }
+nav#TOC li { break-inside: avoid; margin: .12em 0; font-size: .905em; line-height: 1.65; }
+nav#TOC > ul > li { font-weight: 600; margin: .55em 0; font-size: .95em; }
+nav#TOC > ul > li > a { color: #12406e; }
+nav#TOC a { color: #3d4854; text-decoration: none; }
+nav#TOC a:hover { color: #12406e; text-decoration: underline; }
+
+/* ---------- 章节标题：每条正文是一个 h1 ---------- */
+h1 {
+  font-size: 1.5em;
+  line-height: 1.45;
+  margin: 2.8em 0 .7em;
+  padding-top: 1.1em;
+  border-top: 3px double #c8d4e2;
+}
+/* 书名与目录之后的第一个 h1（第一条正文 / 第一个前置章节）不需要大分隔 */
+header#title-block-header h1, nav#TOC h1 { border: 0; margin: 0; padding: 0; }
+h2 {
+  font-size: 1.22em;
+  margin: 2em 0 .55em;
+  padding-bottom: .3em;
+  border-bottom: 1px solid #e6eaf0;
+}
+h3 { font-size: 1.06em; margin: 1.5em 0 .45em; }
+
+/* ---------- 字段小标题：「**说人话**」这类独立成段的加粗行 ---------- */
+p > strong:only-child {
+  display: inline-block;
+  margin: 1.5em 0 .15em;
+  font-size: 1.04em;
+  color: #12406e;
+  border-left: 4px solid #c8a45c;
+  padding-left: .55em;
+  letter-spacing: .02em;
+}
+
+/* ---------- 表格 ---------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.1em 0;
+  font-size: .92em;
+  line-height: 1.6;
+}
+th, td { border: 1px solid #d8dee7; padding: 7px 10px; text-align: left; vertical-align: top; }
+th { background: #f0f4f9; font-weight: 600; white-space: nowrap; }
+tr:nth-child(even) td { background: #fafbfd; }
+
+/* ---------- 引用 / 代码 / 链接 / 分隔线 ---------- */
+blockquote {
+  margin: 1.1em 0;
+  padding: .65em 1.1em;
+  border-left: 4px solid #c8a45c;
+  background: #fbf7ee;
+  color: #4a4327;
+  border-radius: 0 8px 8px 0;
+}
+blockquote p { margin: .35em 0; }
+code {
+  background: #eef2f7;
+  padding: .1em .4em;
+  border-radius: 4px;
+  font-size: .88em;
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+}
+a { color: #0b5cad; text-decoration: none; overflow-wrap: anywhere; }
+a:hover { text-decoration: underline; }
+hr { border: 0; border-top: 1px dashed #d4dbe4; margin: 2.4em 0; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+
+/* ---------- 浮动「回目录」按钮（仅屏幕，打印/EPUB 渲染器自动忽略 JS） ---------- */
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 680px) {
+  body { padding: 18px 14px 70px; font-size: .95rem; }
+  nav#TOC ul { columns: 1; }
+  h1 { font-size: 1.32em; margin-top: 2.2em; }
+  table { font-size: .84em; }
+  th, td { padding: 6px 7px; }
+}
+
+/* ---------- 暗色模式（跟随系统） ---------- */
+@media (prefers-color-scheme: dark) {
+  body { color: #d6dae0; background: #16181c; }
+  em { background: linear-gradient(transparent 62%, #5a4a12 62%); }
+  nav#TOC { background: #1c1f24; border-color: #2c3038; }
+  nav#TOC a { color: #b9c2cd; }
+  nav#TOC > ul > li > a { color: #7fb3e8; }
+  nav#TOC::before { color: #7fb3e8; }
+  h1 { border-top-color: #2c3644; }
+  h2 { border-bottom-color: #2c3038; }
+  p > strong:only-child { color: #7fb3e8; border-left-color: #8a6d2f; }
+  th { background: #22252b; }
+  tr:nth-child(even) td { background: #1b1e23; }
+  th, td { border-color: #2c3038; }
+  blockquote { background: #201d14; color: #cfc6a8; border-left-color: #8a6d2f; }
+  code { background: #22252b; }
+  hr { border-top-color: #2c3038; }
+  a { color: #6db3f2; }
+}
+
+/* ---------- 打印 / PDF（weasyprint） ---------- */
+@page {
+  size: A4;
+  margin: 20mm 17mm 22mm;
+  @bottom-center {
+    content: counter(page);
+    font-size: 10px;
+    color: #98a2ae;
+  }
+}
+@media print {
+  body { max-width: none; padding: 0; font-size: 10.5pt; line-height: 1.75; }
+  nav#TOC { columns: 2; background: #f7f9fc; }
+  h1 { margin-top: 1.6em; page-break-after: avoid; }
+  h2, h3 { page-break-after: avoid; }
+  table, blockquote { page-break-inside: avoid; }
+  a { color: #0b5cad; }
+}
+</style>
+<script>
+/* 浮动「回目录」按钮：屏幕阅读用，weasyprint / EPUB 阅读器会忽略 */
+(function () {
+  function go() {
+    var a = document.createElement('a');
+    a.href = '#TOC';
+    a.textContent = '☰ 目录';
+    a.setAttribute('aria-label', '回到目录');
+    a.style.cssText = 'position:fixed;right:16px;bottom:16px;background:#12406e;color:#fff;'
+      + 'padding:8px 15px;border-radius:22px;font-size:13px;z-index:9;'
+      + 'box-shadow:0 2px 10px rgba(0,0,0,.28);text-decoration:none';
+    document.body.appendChild(a);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', go);
+  } else { go(); }
+})();
+</script>

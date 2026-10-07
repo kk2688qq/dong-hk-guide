@@ -128,40 +128,17 @@ jobs:
             exit 1
           fi
 
-      - name: Write stylesheet
+      - name: Write stylesheet（用仓库内的 assets/book-style.html，可本地验证）
         run: |
-          cat > dist/style.html <<'EOF'
-          <style>
-          body{max-width:760px;margin:0 auto;padding:24px 18px;
-               font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
-               line-height:1.85;color:#1a1a1a;background:#fff}
-          h1{font-size:1.7em;line-height:1.35;margin:0 0 .2em}
-          h2{font-size:1.28em;margin-top:2em;border-bottom:1px solid #e6e6e6;padding-bottom:.3em}
-          h3{font-size:1.08em;margin-top:1.5em}
-          table{border-collapse:collapse;width:100%;margin:1.2em 0;font-size:.92em}
-          th,td{border:1px solid #ddd;padding:8px 10px;text-align:left;vertical-align:top}
-          th{background:#f6f7f9;font-weight:500}
-          tr:nth-child(even) td{background:#fafbfc}
-          blockquote{margin:1.2em 0;padding:.6em 1em;border-left:3px solid #d0d4da;
-                     background:#f7f8fa;color:#444}
-          code{background:#f2f3f5;padding:.1em .35em;border-radius:3px;font-size:.9em}
-          a{color:#0b5cad;text-decoration:none}
-          hr{border:0;border-top:1px solid #e6e6e6;margin:2.2em 0}
-          @media (prefers-color-scheme:dark){
-            body{color:#e8e8e8;background:#16181c}
-            th{background:#22252b}tr:nth-child(even) td{background:#1b1e23}
-            blockquote{background:#1b1e23;color:#ccc;border-left-color:#3a3f47}
-            code{background:#22252b}hr{border-top-color:#2c3038}th,td{border-color:#2c3038}
-            a{color:#6db3f2}}
-          </style>
-          EOF
+          cp assets/book-style.html dist/style.html
+          echo "stylesheet: $(wc -c < dist/style.html) 字节（来自 assets/book-style.html）"
 
       - name: Build single-file HTML
         run: |
           pandoc dist/full.md \
             --standalone --toc --toc-depth=2 \
             --metadata title="董老师香港升学手册" \
-            --metadata lang="zh-HK" \
+            --metadata lang="zh-Hans" \
             --include-in-header=dist/style.html \
             -o dist/HKStudyGuide.html
 
@@ -170,7 +147,7 @@ jobs:
           pandoc dist/full.md \
             --toc --toc-depth=2 \
             --metadata title="董老师香港升学手册" \
-            --metadata lang="zh-HK" \
+            --metadata lang="zh-Hans" \
             -o dist/HKStudyGuide.epub
 
       - name: Build PDF (weasyprint)
