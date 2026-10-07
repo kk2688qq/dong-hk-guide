@@ -102,6 +102,19 @@ REQUIRED_FIELDS = (
 )
 # 证据等级写法兼容：**证据等级**：A ／ 证据等级：**A**
 RE_EVIDENCE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
+# 内部术语：book/ 是**对外内容**（Pages 站点 / PDF / EPUB 都直接取它），正文不许出现
+# 协作体内部语言。此规则**早就写在 CLAUDE.md**（判例 12 规则 2「正文不出现内部黑话」），
+# 但一直只靠人记——2026-10-07 实测：作者已把 9 处内部术语在「书稿」里脱敏，而
+# **仓库 book/ 里原样留着**（`book/（判例 8）`、`待 WB4 裁定（详见 WB2 致 WB4 的信…）`、
+# `本项目` 等），随 Pages 与 Release 一起公开。规则没有机器拦 = 没有规则。
+# 判定只覆盖 book/（meta/ 与 docs/ 对 `docs/核实记录/` 的引用是对外正当引用，不在其列）。
+INTERNAL_TERMS = (
+    ("协作体工号", r"WB[1-9]\b"),
+    ("内部判例号", r"判例\s*\d"),
+    ("内部自称", r"本项目"),
+    ("内部过程词", r"信源勘察|校验包|交接日志|任务看板|核实记录/\d"),
+    ("内部路径", r"docs/"),
+)
 # 标题（方案 A）：必须以 HK 编号开头
 RE_TITLE_HK = re.compile(r"^#\s+(HK-\d{3})\s+\S")
 # 仅用于「剥掉标头」，不含 \S —— 否则标题正文首个字符若是数字（如「2026 …」）会被误吞，
@@ -189,6 +202,14 @@ def check_schema(files):
             problems["schema"].append(f"{name} 证据等级格式不对（应形如「证据等级：**A**」）")
         if "编者" not in text or "核对" not in text:
             problems["schema"].append(f"{name} 末尾缺「编者…核对…」编者行")
+        # 对外内容零内部术语（CLAUDE.md 判例 12 规则 2 / §一.2）：
+        # book/ 直接进 Pages 站点与 PDF/EPUB，内部语言会跟着一起公开。
+        for label, pat in INTERNAL_TERMS:
+            for m in re.finditer(pat, text):
+                problems["schema"].append(
+                    f"{name} 出现内部术语（{label}）：「{m.group(0)}」——"
+                    f"book/ 是对外内容，内部语言写进 CLAUDE.md，不复述到正文"
+                )
         mt = RE_RISK_TAG.search(text)
         if not mt:
             problems["schema"].append(
@@ -567,7 +588,7 @@ def render_release(rows):
 
 # ---------------------------------------------------------------- run
 TITLES = {
-    "schema": "Schema 完整性（12 字段 / 编号方案 A / 风险导向注释 / 编者行 / 等级与信源匹配）",
+    "schema": "Schema 完整性（12 字段 / 编号方案 A / 风险导向注释 / 编者行 / 等级与信源匹配 / 对外内容零内部术语）",
     "refs": "引用守恒（交叉引用 + HK 编号与对照表一致 + 核实记录一一对应）",
     "links": "链接巡检（官方链接是否还活着）",
     "promise": "承诺性表述扫描（保录取 / 百分百 / 稳过）",
