@@ -574,9 +574,20 @@ python tools/check.py --release     # 生成 docs/放行候选.md（该文件为
 - **做法**：`book.yml` 新增 `pages` 任务 → `tools/build_site.py` 把 `book/` + `meta/front-*.md` 编译成
   `site/`（`index.html` 目录页、`entry-HK-*.html` 逐条页、`md/*.md` 纯文本、`book.html` 单文件全书、
   `llms.txt`、`llms-full.txt` 全文合并、`robots.txt`、`sitemap.xml`），再 `deploy-pages` 发布。
-- **为什么用工作流而不是点 Settings**：本机**无 `gh` CLI、无可用 PAT**，改不了仓库设置；
-  `actions/configure-pages@v5` 的 **`enablement: true` 可由 CI 用工作流令牌自动开启 Pages**
-  （Source = GitHub Actions）。要改成「main 分支根目录」源，在设置里改一次即可，工作流照常可跑。
+- **为什么用工作流而不是点 Settings**：本机**无 `gh` CLI、无可用 PAT**，改不了仓库设置。
+  **⚠️ 2026-10-07 实测订正（重要，别再试错）**：`actions/configure-pages` 的 **`enablement: true`
+  不可能靠工作流自动开启 Pages**——官方对该输入的说明即「requires a token **other than `GITHUB_TOKEN`**
+  to be provided」；根因是**创建 Pages 站点属「仓库管理」操作，Actions 自动令牌按设计永远无权**，
+  加任何 `permissions:` 都无效。已实测两轮（加 enablement / 不加 enablement），**均失败**，无鉴权读 job 日志返回 `403 Must have admin rights`。
+  → 工作流因此改成「**不失败但出警示**」：
+  - `Configure Pages` 去 enablement + `continue-on-error: true`；
+  - 「上传产物 / 部署」两步用 **`steps.X.outcome`** 守卫（**坑：`continue-on-error` 时步骤显示 success，
+    但 `outcome` 仍是 `failure`，只有 `conclusion` 才是 success——写 `if:` 必须用 `outcome`**）；
+  - 未开启时写 `$GITHUB_STEP_SUMMARY` + `::warning::`，把「怎么开」直接写进 CI 页面。
+  - **另注**：`secrets` 上下文在 step 的 `if:` 里不可用 → 经 **job 级 `env`** 传递后再在 `if` 里判 `env.X`。
+- **仍需人工一次（约 30 秒）**：Settings → Pages → Source 选「**GitHub Actions**」。
+  或在仓库 Secrets 配 **`GH_PAGES_TOKEN`**（细粒度 PAT，含 Pages 读写）→ 兜底步骤会自动创建站点。
+  **两者都没做 = 站点不发布，但单文件版（HTML/PDF/EPUB + Release）照常发布**——这是刻意的失败隔离。
 - **刻意的失败隔离**：`pages` 任务 `continue-on-error: true` —— **站点开启/部署失败绝不允许
   影响单文件版发布**（同 `check.py` 的设计原则：门禁只管新增内容质量，不挡既有内容可用性）。
 - **不新增事实**：`build_site.py` 只渲染 `book/` 已有正文，标题/风险/等级一律从正文解析，
@@ -613,6 +624,48 @@ python tools/readme_sync.py --check   # 校验是否已同步（不同步退出�
 | 2 扩张·AI 层 | `llms.txt` + `robots.txt` + `LICENSE` + 产物页首「版本号 + 引用格式」 | ✅ 本次落地 |
 | 3 扩张·台账 | `docs/纠错台账.md`（九列）+ AI 挑错工序（判例 20） | ✅ 本次落地：九列 + 首条实记录；台账**已合进单文件产物**（`dist/full.md` 附录）**并作为 Release 资产随 `book-latest` 发布** |
 | 4 持续 | 每周一批（3 内容 + 3 视频 + 1 封面）；AI 引用监测（每月 5 问 × 3 AI） | ⚪ 待 WB4 排 |
-| 5 站点 | GitHub Pages（`tools/build_site.py` + `book.yml` 的 `pages` 任务）；**另有书级前置章节 5 页**（`meta/front-*.md`，并入单文件产物） | ✅ 2026-10-07 落地（董老师已拍板开启） |
+| 5 站点 | GitHub Pages（`tools/build_site.py` + `book.yml` 的 `pages` 任务）＋ **站点检索筛选**（关键词／风险／阶段／证据，纯前端）；**另有书级前置章节 7 页**（`meta/front-*.md`，并入单文件产物） | ✅ 2026-10-07 落地（**代码已就位**；Pages 站点本身仍需人工一次开启，见上） |
+| 6 书骨架 | WB4-022 的 9 项书级章节（导语／问题表／怎么读／条目示例／证据分级／风险分档／术语表／分节目录／许可免责） | ✅ 2026-10-07 落地（见「十六」） |
 
 **止损线**：AI 引用连续 3 个月零命中 → 暂停站点投入，回退「路径一」为主。「被 AI 引用次数」是**观察指标**，不作为考核。
+
+---
+
+## 十六、书骨架（书级章节）——WB4-022 落地，2026-10-07
+
+> 来源：WB4-022《补框架性章节清单》——参考 HowToLiveBetter 的「书骨架」，让仓库从「一堆条目」变成「一本书」。要补 **9 项**。
+
+**落位原则（重要，防双份漂移）**：**书级正文一律放 `meta/front-*.md`（单一来源）**，由 `tools/build_site.py` 编译进站点与单文件产物（HTML/PDF/EPUB）；**README 只放「导语 + 七页导航 + 按主线分节目录 + 全量目录」**，不复制正文。
+
+WB4 原建议是「1/2/3/4/5/6/8/9 放 README、第 7 项放 `docs/术语表.md`」——本仓库改为上述落位，理由是**同一段文字只允许存在一处**（判例 15「同一个事实不许有两套判定」的同源要求）：否则 README 与站点各存一份，必然漂移且都要人改。**此项已随信 032 提请 WB4 认可；若另裁，按裁定搬。**
+
+**9 项对照表**
+
+| WB4-022 项 | 落在哪 | 状态 |
+| --- | --- | --- |
+| 1 开头导语（3–5 行） | `README.md` 顶部 **`<!-- README:LEAD:START/END -->`**（**条数由 `readme_sync.py` 回填**，不手写） | ✅ |
+| 2 问题 → 去哪看（表） | `meta/front-01-这本书想回答的问题.md`（六节，按家长提问组织，每行直跳条目） | ✅ |
+| 3 怎么读（9 条） | `meta/front-04-使用方法.md` 第一节「九条最快的读法」 | ✅ |
+| 4 条目长什么样（示例） | `meta/front-07-条目长什么样.md`（用 HK-019 做带标注实例，12 字段逐个说明） | ✅ **新建** |
+| 5 证据分级 | `meta/front-03-证据分级说明.md`（A/B/C + **各等级条数** + 「A 级只说明可核」+ 争议/官方没明说怎么标） | ✅ |
+| 6 风险导向分档 | `meta/front-06-风险导向分档.md`（三维度 + 判定规则 + **当前分布** + 排序 + 「这是判断不是证据」+ 为什么不用「性价比」） | ✅ **新建** |
+| 7 术语表 | `meta/front-02-术语表.md`（四组表，20 条术语，每条回指对应条目） | ✅ |
+| 8 目录（按主线分节） | `README.md`「按主线读」表（五节＝站点五个分组，与 `build_site.py` 的 `GROUPS` **同源**）；下面接 CI 自动回填的全量目录 | ✅ |
+| 9 许可 + 免责声明 | `meta/front-05-免责声明.md`（含「**对外统一表述**」段）+ `README.md` 的 License 段 + `LICENSE` | ✅ |
+
+**站点检索筛选（022 第 3 项的实现）**
+
+022 第 3 项要求「在线检索页按**关键词、风险等级、决策阶段**筛」。原先 `build_site.py` 产出纯静态列表，**现已是纯前端筛选**：
+
+- **筛选项**：关键词（搜 HK 号／标题／说人话／适用人群）＋ 风险等级（高/中/低）＋ 决策阶段（四选一）＋ 证据等级（A/B/C）；
+- **数据来源**：卡片上的 `data-*` **全部由正文解析得到**（`风险=` 注释行、`证据等级：` 行），**不新增任何事实**；
+- **零依赖**：一段内联 `<script>`，无外部库；分组标题的「（N 条）」随筛选实时更新；
+- **机器验收（必须跑真浏览器，grep 代替不了）**：打开 `site/index.html` 后，点「风险=高」应显示 **32**、点「证据=A」应显示 **38**、点「阶段=怎么落地」应显示 **9**、搜「留位费」应显示 **2**，清空后回 **46**。
+  （2026-10-07 已用 CDP 实测通过。**纯静态 grep 只能验证产物结构，验证不了「按钮点了有没有反应」**。）
+
+**维护清单（改书骨架时同步这几处）**
+
+1. 新增/改动 `meta/front-*.md` → `build_site.py` **自动收录**（glob `front-*.md`），**无需改代码**；
+2. 改完跑 `python tools/build_site.py --out site`，核对「条目 N 条 ｜ 前置章节 M 页」；
+3. README 的**导语**由 `readme_sync.py` 管（含条数），**「按主线读」表是手写的**（分组变了要手改）；
+4. **分组的唯一真源**是 `build_site.py` 的 `GROUPS` + `group_of()`；README 分节必须与之一致，不许另起一套。

@@ -40,6 +40,8 @@ STATUS_START = "<!-- README:STATUS:START -->"
 STATUS_END = "<!-- README:STATUS:END -->"
 TOC_START = "<!-- README:TOC:START -->"
 TOC_END = "<!-- README:TOC:END -->"
+LEAD_START = "<!-- README:LEAD:START -->"
+LEAD_END = "<!-- README:LEAD:END -->"
 
 
 def entries():
@@ -74,6 +76,19 @@ def collect():
             "level": level, "reviewed": reviewed, "a": level == "A",
         })
     return rows
+
+
+def render_lead(rows, today=None):
+    """README 顶部导语——**条数由脚本回填**，避免「README 说 45 条、实际 46 条」这类漂移。"""
+    n = len(rows)
+    return (
+        f"{LEAD_START}\n"
+        f"> 一份**免费、可查证、随手可转发**的中国香港升学与身份决策指南。讲**中学插班、高考申大学、本科申硕、"
+        f"高才通／优才／受养人／IANG／永居**，以及费用、住宿和「保录」「内推」这类骗局。**已收录 {n} 条**（持续增加）。\n"
+        f"> **每条**写明**花掉什么、换回什么、漏掉会怎样、官方依据是什么**；来源**只引官方文件和院校官网**。\n"
+        f"> **不用全做**：这是按**风险高低**排好的**备选单**，不是任务清单——**挑走一条就算数**。\n"
+        f"{LEAD_END}"
+    )
 
 
 def render_status(rows, today=None):
@@ -180,7 +195,8 @@ def main():
         raise SystemExit("book/ 里没有条目，README 不回填。")
 
     text = read(README)
-    new = replace_block(text, STATUS_START, STATUS_END, render_status(rows))
+    new = replace_block(text, LEAD_START, LEAD_END, render_lead(rows))
+    new = replace_block(new, STATUS_START, STATUS_END, render_status(rows))
     new = replace_block(new, TOC_START, TOC_END, render_toc(rows))
 
     llms = render_llms(rows)

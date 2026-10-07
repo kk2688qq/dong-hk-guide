@@ -186,6 +186,61 @@ nav.toc a{display:block;padding:.15em 0}
 footer{margin-top:3em;padding-top:1em;border-top:1px solid var(--line);font-size:.85em;
 color:var(--mut)}
 .top{font-size:.88em;color:var(--mut);margin-bottom:1.4em}
+/* 检索筛选（2026-10-07 加）：纯前端，数据全部取自正文解析，不新增事实 */
+.filters{position:sticky;top:0;z-index:9;background:var(--bg);border-bottom:1px solid var(--line);
+padding:.7em 0 .6em;margin:0 0 1.2em}
+.filters input[type=search]{width:100%;padding:.5em .7em;font-size:1em;border:1px solid var(--line);
+border-radius:6px;background:var(--card);color:var(--fg);font-family:inherit}
+.frow{display:flex;flex-wrap:wrap;gap:.35em;align-items:center;margin-top:.5em;font-size:.9em}
+.frow b{color:var(--mut);font-weight:400;margin-right:.15em}
+.fbtn{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:6px;
+padding:.15em .6em;cursor:pointer;font-size:.92em;font-family:inherit}
+.fbtn[aria-pressed=true]{border-color:var(--acc);color:var(--acc);font-weight:600}
+.fcount{color:var(--mut);font-size:.85em;margin-top:.45em}
+.card[hidden],section.grp[hidden]{display:none}
+"""
+
+FILTER_JS = """
+<script>
+(function(){
+  var q=document.getElementById('q'), cnt=document.getElementById('cnt');
+  if(!q||!cnt) return;
+  var state={risk:'',stage:'',grade:''};
+  var cards=[].slice.call(document.querySelectorAll('.card[data-hk]'));
+  var groups=[].slice.call(document.querySelectorAll('section.grp'));
+  function low(s){return (s||'').toLowerCase();}
+  function apply(){
+    var kw=low(q.value.trim()), n=0;
+    cards.forEach(function(c){
+      var ok=(!kw||low(c.getAttribute('data-q')).indexOf(kw)>=0)
+        &&(!state.risk||c.getAttribute('data-risk')===state.risk)
+        &&(!state.stage||c.getAttribute('data-stage')===state.stage)
+        &&(!state.grade||c.getAttribute('data-grade')===state.grade);
+      c.hidden=!ok;
+      if(ok) n++;
+    });
+    groups.forEach(function(g){
+      var vis=g.querySelectorAll('.card[data-hk]:not([hidden])').length;
+      g.hidden=!vis;
+      var s=g.querySelector('.cnt');
+      if(s) s.textContent='（'+vis+' 条）';
+    });
+    cnt.textContent='当前显示 '+n+' / '+cards.length+' 条';
+  }
+  [].slice.call(document.querySelectorAll('.fbtn')).forEach(function(b){
+    b.addEventListener('click',function(){
+      var f=b.getAttribute('data-f');
+      state[f]=b.getAttribute('data-v');
+      [].slice.call(document.querySelectorAll('.fbtn[data-f="'+f+'"]')).forEach(function(x){
+        x.setAttribute('aria-pressed', x===b?'true':'false');
+      });
+      apply();
+    });
+  });
+  q.addEventListener('input',apply);
+  apply();
+})();
+</script>
 """
 
 
@@ -341,29 +396,70 @@ def main() -> int:
     )
     parts.append(dl)
 
+    # 检索筛选（纯前端）：筛选项的取值全部来自正文解析，不新增事实
+    def fbtn(field: str, value: str, label: str, pressed: bool = False) -> str:
+        pr = "true" if pressed else "false"
+        return (
+            f'<button class="fbtn" data-f="{field}" data-v="{html.escape(value)}" '
+            f'aria-pressed="{pr}">{html.escape(label)}</button>'
+        )
+
+    parts.append('<div class="filters">')
+    parts.append(
+        '<input type="search" id="q" autocomplete="off" '
+        'placeholder="搜关键词：高才通 / 留位费 / 插班 / 学费 / 受养人 …（按风险与阶段筛在下面）">'
+    )
+    for field, label, values in (
+        ("risk", "风险", ("高", "中", "低")),
+        ("stage", "阶段", ("要不要去", "怎么申请", "怎么选", "怎么落地")),
+        ("grade", "证据", ("A", "B", "C")),
+    ):
+        parts.append(f'<div class="frow"><b>{label}</b>{fbtn(field, "", "全部", True)}')
+        for v in values:
+            parts.append(fbtn(field, v, v))
+        parts.append("</div>")
+    parts.append('<div class="fcount" id="cnt"></div>')
+    parts.append("</div>")
+
     for gname, _ in GROUPS:
         bucket = [e for e in entries if e["group"] == gname]
         if not bucket:
             continue
-        parts.append(f"<h2>{html.escape(gname)}<span class=\"lede\">（{len(bucket)} 条）</span></h2>")
+        parts.append(f'<section class="grp" data-group="{html.escape(gname)}">')
+        parts.append(
+            f"<h2>{html.escape(gname)}"
+            f'<span class="lede cnt">（{len(bucket)} 条）</span></h2>'
+        )
         for e in bucket:
             who = f'<div class="lede">{html.escape(e["who"])}</div>' if e["who"] else ""
             lede = f'<div class="lede">{html.escape(e["lede"])}</div>' if e["lede"] else ""
+            q = re.sub(r"\s+", " ", f'{e["hk"]} {e["title"]} {e["lede"]} {e["who"]}').strip()
             parts.append(
-                f'<div class="card"><h3><a href="entry-{e["hk"]}.html">'
+                f'<div class="card" data-hk="{e["hk"]}"'
+                f' data-risk="{html.escape(e["risk"])}"'
+                f' data-stage="{html.escape(e["stage"])}"'
+                f' data-grade="{html.escape(e["grade"])}"'
+                f' data-anx="{html.escape(e["anxiety"])}"'
+                f' data-q="{html.escape(q, quote=True)}">'
+                f'<h3><a href="entry-{e["hk"]}.html">'
                 f'{e["hk"]} {html.escape(e["title"])}</a></h3>'
                 f'<div class="badges">{badges(e)}</div>{lede}{who}</div>'
             )
+        parts.append("</section>")
     # 未分组兜底
     placed = {g for g, _ in GROUPS}
     rest = [e for e in entries if e["group"] not in placed]
     if rest:
+        parts.append('<section class="grp" data-group="其他">')
         parts.append("<h2>其他</h2>")
         for e in rest:
             parts.append(
-                f'<div class="card"><h3><a href="entry-{e["hk"]}.html">'
+                f'<div class="card" data-hk="{e["hk"]}"><h3><a href="entry-{e["hk"]}.html">'
                 f'{e["hk"]} {html.escape(e["title"])}</a></h3></div>'
             )
+        parts.append("</section>")
+
+    parts.append(FILTER_JS)
 
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as fh:
         fh.write(
