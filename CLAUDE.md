@@ -560,13 +560,29 @@ python tools/check.py --release     # 生成 docs/放行候选.md（该文件为
 
 **三项边界裁定**
 
-1. **AI 可读层**：先做**零成本部分**（本仓库内）；**开站点（路径二）单独立项，等董老师确认**。
+1. **AI 可读层**：先做**零成本部分**（本仓库内）；**开站点（路径二）单独立项**。
+   → **2026-10-07 更新**：董老师已确认**开 GitHub Pages**（WB4-021 转达，理由：内地可搜、AI 可抓）。**阶段 5 已落地**（见下）。
 2. **纠错台账**：**不写联系方式**；九列字段；随 Release 发布并合进单文件 HTML。
 3. **四引擎**（AI 引用 / 搜索 / 短视频 / 转发）写进项目口径与看板——**AI 引用是慢变量但复利**。
 
 **技术事实（写死，别再试错）**：`robots.txt` / `llms.txt` **只在自有域名根目录生效**；对 `raw.githubusercontent.com` 无效（那边走 GitHub 自己的策略）。所以：
 - **路径一（文件投喂）**：今天就能走——AI 直接读 `book/*.md` / 下载 PDF；
-- **路径二（联网检索）**：必须靠**站点**，**不启动，等董老师拍板**。
+- **路径二（联网检索）**：必须靠**站点**。**2026-10-07 董老师已拍板开启**，见下「阶段 5」。
+
+**阶段 5 = 站点（GitHub Pages），2026-10-07 落地**
+
+- **做法**：`book.yml` 新增 `pages` 任务 → `tools/build_site.py` 把 `book/` + `meta/front-*.md` 编译成
+  `site/`（`index.html` 目录页、`entry-HK-*.html` 逐条页、`md/*.md` 纯文本、`book.html` 单文件全书、
+  `llms.txt`、`llms-full.txt` 全文合并、`robots.txt`、`sitemap.xml`），再 `deploy-pages` 发布。
+- **为什么用工作流而不是点 Settings**：本机**无 `gh` CLI、无可用 PAT**，改不了仓库设置；
+  `actions/configure-pages@v5` 的 **`enablement: true` 可由 CI 用工作流令牌自动开启 Pages**
+  （Source = GitHub Actions）。要改成「main 分支根目录」源，在设置里改一次即可，工作流照常可跑。
+- **刻意的失败隔离**：`pages` 任务 `continue-on-error: true` —— **站点开启/部署失败绝不允许
+  影响单文件版发布**（同 `check.py` 的设计原则：门禁只管新增内容质量，不挡既有内容可用性）。
+- **不新增事实**：`build_site.py` 只渲染 `book/` 已有正文，标题/风险/等级一律从正文解析，
+  对照表只用于「主线分组」，**数字与口径零改动**。
+- **机器验收**：`python tools/build_site.py` 能生成 `site/index.html` + `llms.txt` + `robots.txt`；
+  CI 里 `test -s` 三个文件；条数须等于 `ls book/*.md | wc -l`。
 
 **零成本部分落点（本仓库）**
 
@@ -597,5 +613,6 @@ python tools/readme_sync.py --check   # 校验是否已同步（不同步退出�
 | 2 扩张·AI 层 | `llms.txt` + `robots.txt` + `LICENSE` + 产物页首「版本号 + 引用格式」 | ✅ 本次落地 |
 | 3 扩张·台账 | `docs/纠错台账.md`（九列）+ AI 挑错工序（判例 20） | ✅ 本次落地：九列 + 首条实记录；台账**已合进单文件产物**（`dist/full.md` 附录）**并作为 Release 资产随 `book-latest` 发布** |
 | 4 持续 | 每周一批（3 内容 + 3 视频 + 1 封面）；AI 引用监测（每月 5 问 × 3 AI） | ⚪ 待 WB4 排 |
+| 5 站点 | GitHub Pages（`tools/build_site.py` + `book.yml` 的 `pages` 任务）；**另有书级前置章节 5 页**（`meta/front-*.md`，并入单文件产物） | ✅ 2026-10-07 落地（董老师已拍板开启） |
 
 **止损线**：AI 引用连续 3 个月零命中 → 暂停站点投入，回退「路径一」为主。「被 AI 引用次数」是**观察指标**，不作为考核。

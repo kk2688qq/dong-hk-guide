@@ -9,6 +9,10 @@ on:
 
 permissions:
   contents: write
+  # GitHub Pages 部署（WB4-021「开 GitHub Pages」/ 董老师已定）：
+  # deploy-pages 需要 pages: write 写入部署，并需 id-token: write 换 OIDC token。
+  pages: write
+  id-token: write
 
 concurrency:
   group: build-book
@@ -84,6 +88,14 @@ jobs:
             echo "prepended: dist/head.md（文档信息页首）"
           fi
           count=0
+          # 前置章节（开篇 / 术语表 / 证据分级 / 使用方法 / 免责声明）——WB4-021 第 3 项。
+          # 目的是让产物从「一堆条目」变成「一本书」：读者先看到「这本书想回答的问题」。
+          # 文件在 meta/ 下、**不在 book/ 中**，因此不参与条目 schema 质检。
+          for f in $(ls meta/front-*.md 2>/dev/null | LC_ALL=C sort); do
+            printf '\n\n<!-- ===== %s ===== -->\n\n' "$f" >> dist/full.md
+            cat "$f" >> dist/full.md
+            echo "prepended: $f（前置章节）"
+          done
           # 用 LC_ALL=C 保证按字节序排序 == 按编号排序（001/002/003…）
           while IFS= read -r f; do
             printf '\n\n<!-- ===== %s ===== -->\n\n' "$f" >> dist/full.md
@@ -188,6 +200,13 @@ jobs:
           fi
           exit $fail
 
+      - name: Upload dist（供 pages 任务下载）
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
       - name: Upload to fixed release (book-latest)
         uses: softprops/action-gh-release@v2
         with:
@@ -203,3 +222,66 @@ jobs:
             docs/纠错台账.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------- 站点（路径二）
+  # WB4-021 第 1 项 / 董老师已定：开 GitHub Pages，让 llms.txt、robots.txt 在
+  # **自有域名根**生效，AI 联网检索可命中（此前它们在 GitHub 仓库根对
+  # raw.githubusercontent.com 不产生作用）。
+  #
+  # 为什么用工作流而不是去点 Settings → Pages：
+  #   本机没有 gh CLI、也没有可用的 PAT，无法改仓库设置；
+  #   actions/configure-pages 的 `enablement: true` 可由 CI 用工作流令牌
+  #   **自动开启 Pages**（Source 置为 GitHub Actions），效果等价的自动化路径。
+  #   若某天要做成「main 分支根目录」源，在 Pages 设置里改一次即可，本工作流照常可跑。
+  #
+  # 刻意 continue-on-error：**Pages 开启或部署失败不得影响单文件版发布**
+  # （与 check.py 的设计原则一致：门禁只管新增内容的质量，不挡既有内容的可用性）。
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install site deps
+        run: pip3 install markdown
+
+      - name: Build site (tools/build_site.py)
+        env:
+          SITE_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          SITE_BOOK_HTML: dist/HKStudyGuide.html
+        run: |
+          python3 tools/build_site.py
+          echo "--- site 产物 ---"
+          ls -la site | head -20
+          test -s site/index.html
+          test -s site/llms.txt
+          test -s site/robots.txt
+
+      - name: Configure Pages（首次由 CI 自动开启）
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

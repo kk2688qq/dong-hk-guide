@@ -8,3 +8,5 @@ docs/放行候选.md
 # 证据以「出处链接 + 段落号」形式落在 docs/核实记录/ 与 docs/信源勘察/，可随时重新下载复现
 _stage/
 _tmp/
+# 静态站点构建产物（tools/build_site.py 生成，由 CI 发布到 GitHub Pages，不入库）
+site/
