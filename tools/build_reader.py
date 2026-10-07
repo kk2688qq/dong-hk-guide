@@ -829,7 +829,7 @@ def build_page(entries: list[dict], online: bool, stamp: str = "") -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{BOOK_TITLE} · {n} 条可查证的香港升学与身份决策</title>
-<meta name="description" content="免费、可查证的中国香港升学与身份决策指南：{n} 条，覆盖中学插班、高考申本科、本科申硕、高才通／优才／受养人／IANG／永居，以及费用、住宿与「保录」「内推」骗局。每条只写查得到官方原文的内容。">
+<meta name="description" content="免费、可查证的中国香港升学与身份决策指南：{n} 条，覆盖中学插班、高考申本科、本科申硕、高才通／优才／受养人／IANG／永居，以及费用、住宿与中介招生骗局。每条只写查得到官方原文的内容。">
 <meta name="theme-color" content="#0b5cad" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)">
 <script>(function(){{try{{var s=localStorage.getItem('theme');
@@ -854,7 +854,7 @@ else if(s==='light')document.documentElement.className='light';}}catch(e){{}}}})
 <div class="wrap" id="top">
   <div class="hero">
     <h1>{BOOK_TITLE}</h1>
-    <p>一份免费、可查证、随手可转发的中国香港升学与身份决策指南。讲中学插班、高考申大学、本科申硕、高才通／优才／受养人／IANG／永居，以及费用、住宿和「保录」「内推」这类骗局。</p>
+    <p>一份免费、可查证、随手可转发的中国香港升学与身份决策指南。讲中学插班、高考申大学、本科申硕、高才通／优才／受养人／IANG／永居，以及费用、住宿和中介招生这类骗局。</p>
     <p>每条写明<b>要花什么、换回什么、漏掉会怎样</b>，来源只引官方文件和院校官网。已收录 <b>{n}</b> 条，A 级官方信源 {ratio}。</p>
 
     <!-- 手机端默认收起：常显会吃掉 200px+，把第一张卡推到第二屏。
