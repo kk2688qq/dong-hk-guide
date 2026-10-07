@@ -63,6 +63,14 @@ FIELD_LABELS = {
     "证据等级 + 官方依据", "本条最后更新",
 }
 
+# ---- 结构性挪移：只有「显式规则」能表达，不能靠机械反变换 ----
+# 定稿把 HK-030 拆成两处：条目头（说人话 / 要花什么 / 换回什么）+ **章级块**
+# （`## 一、材料清单总表…` 起到该块末尾的编者按，含条目剩下的字段）。
+# 仓库侧 030 是这两段拼起来的。不写这条规则，机械覆盖会把 5276 字删成 408 字。
+EXTRA_BLOCKS = {
+    "HK-030": {"start": "## 一、材料清单总表（按阶段，可打印）", "stop": "### HK-043"},
+}
+
 
 def read(path):
     with open(path, encoding="utf-8") as fh:
@@ -98,29 +106,27 @@ def split_draft(text):
     return {k: v[0] for k, v in segments.items()}, ignored
 
 
-def to_repo(seg, hk, problems):
-    """定稿段落 → 仓库正文（反变换）。"""
-    out = []
-    for ln in seg.split("\n"):
-        if RE_PAGEBREAK.match(ln):
-            continue
-        m = RE_ENTRY.match(ln)
-        if m and m.group(1) == hk and ln.startswith("### "):
-            out.append(f"# {hk} {m.group(2)}")
-            continue
-        m = RE_RISK_Q.match(ln)
-        if m:
-            out.append(f"<!-- 风险={m.group(1)} 阶段={m.group(2)} 焦虑={m.group(3)} -->")
-            continue
-        m = RE_FIELD4.match(ln)
-        if m:
-            label = m.group(1)
-            if label not in FIELD_LABELS:
-                problems.append(f"{hk} 出现未知的 #### 标题（不入字段白名单）：{label}")
-            out.append(f"**{label}**")
-            continue
-        out.append(ln)
-    # 收尾：去掉段尾的 --- / 空行（仓库文件以编者行结尾）
+def convert_line(ln, hk, problems):
+    """单行反变换。返回 None 表示该行丢弃（分页符）。"""
+    if RE_PAGEBREAK.match(ln):
+        return None
+    m = RE_ENTRY.match(ln)
+    if hk and m and m.group(1) == hk and ln.startswith("### "):
+        return f"# {hk} {m.group(2)}"
+    m = RE_RISK_Q.match(ln)
+    if m:
+        return f"<!-- 风险={m.group(1)} 阶段={m.group(2)} 焦虑={m.group(3)} -->"
+    m = RE_FIELD4.match(ln)
+    if m:
+        label = m.group(1)
+        if label not in FIELD_LABELS:
+            problems.append(f"{hk or '块'} 出现未知的 #### 标题（不入字段白名单）：{label}")
+        return f"**{label}**"
+    return ln
+
+
+def _tidy(out):
+    """收尾：去掉段尾的 --- / 空行（仓库文件以编者行结尾）。"""
     while out and not out[-1].strip():
         out.pop()
     while out and out[-1].strip() == "---":
@@ -130,6 +136,38 @@ def to_repo(seg, hk, problems):
     # 仓库 book/*.md 的历史约定是**末尾不带换行**（实测：末字节是汉字/星号，非 0a）。
     # 为免一次覆盖把 49 个文件全变成「改了末行」，这里跟随既有约定，由调用方决定收尾。
     return "\n".join(out)
+
+
+def to_repo(seg, hk, problems):
+    """定稿条目段 → 仓库正文（反变换）。"""
+    out = [x for x in (convert_line(l, hk, problems) for l in seg.split("\n")) if x is not None]
+    return _tidy(out)
+
+
+def extra_block(lines, start, stop, problems):
+    """取定稿里 [start 标题, stop 标题) 之间的整块，并做同样的行级反变换。
+
+    终止条件 = 先遇到 `### HK-`（下一条目）/ `## 第 N 章`（下一章）/ `# `（下一部分）
+    为止——**不能见 `## ` 就停**（HK-030 的块自带 `## 一、` 与 `## 二、` 两级小节），
+    也不能只写死一个 stop 字符串（实测写成 `## 第 2 章` 时会把 HK-043 全条吞进来）。
+    stop 只作**期望值**用，实际边界以上面三条为准。
+    """
+    try:
+        i = next(k for k, l in enumerate(lines) if l.strip() == start.strip())
+    except StopIteration:
+        return None
+    j = len(lines)
+    for k in range(i + 1, len(lines)):
+        s = lines[k].strip()
+        if s.startswith("### HK-") or s.startswith("# ") or re.match(r"^##\s*第\s*\d+\s*章", s):
+            j = k
+            break
+    body = [x for x in (convert_line(l, None, problems) for l in lines[i:j]) if x is not None]
+    if stop and not lines[j].strip().startswith(stop.strip()):
+        # 边界与预期不符：报出来，不静默
+        print(f"    （提示：{start} 的块止于「{lines[j].strip()[:30]}」，"
+              f"与预期的「{stop}」不同——规则可能需要更新）")
+    return _tidy(body)
 
 
 def hk_of(name):
@@ -178,9 +216,21 @@ def main():
         print(f"  ! 只在仓库里有：{only_repo}")
 
     problems, changed, same, refused = [], [], 0, []
+    dlines = read(args.draft).split("\n")
     for hk in sorted(set(draft) & set(repo)):
         name = repo[hk]
         want = to_repo(draft[hk], hk, problems)
+        # 结构性挪移：按显式规则把章级块拼回条目
+        if hk in EXTRA_BLOCKS:
+            blk = extra_block(dlines, EXTRA_BLOCKS[hk]["start"],
+                              EXTRA_BLOCKS[hk]["stop"], problems)
+            if blk is None:
+                problems.append(
+                    f"{hk} 的章级块「{EXTRA_BLOCKS[hk]['start']}」在定稿里找不到"
+                    f"——规则失效，本条目跳过（请更新 EXTRA_BLOCKS）"
+                )
+                continue
+            want = want + "\n\n---\n\n" + blk
         path = os.path.join(BOOK, name)
         have = read(path)
         if have.rstrip("\n") == want.rstrip("\n"):
