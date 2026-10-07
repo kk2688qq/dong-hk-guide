@@ -272,10 +272,31 @@ jobs:
           test -s site/llms.txt
           test -s site/robots.txt
 
-      - name: Configure Pages（首次由 CI 自动开启）
+      - name: 开启 Pages（首次；GITHUB_TOKEN 可能无创建权限 → 不阻断）
+        # GitHub 对「用工作流令牌创建 Pages 站点」有限制：GITHUB_TOKEN 可以**更新**已有
+        # Pages 站点，但在不少仓库上**无权创建**（Resource not accessible by integration）。
+        # 因此这里先自查一次、尝试创建一次，失败只 **notice/warning**、不阻断部署链；
+        # 若确实创建不了，只需仓库管理员在 Settings → Pages 把 Source 设为
+        # 「GitHub Actions」一次，此后本工作流每次 push 全自动部署。
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uxo pipefail
+          echo "--- 1) 查询 Pages 现状 ---"
+          gh api "/repos/${{ github.repository }}/pages" 2>&1 | head -20 \
+            || echo "::notice::Pages 尚未开启（404）"
+          echo "--- 2) 尝试创建 Pages 站点（build_type=workflow） ---"
+          if gh api --method POST "/repos/${{ github.repository }}/pages" -f build_type=workflow 2>&1 | head -30; then
+            echo "::notice::Pages 站点已创建/更新（build_type=workflow）"
+          else
+            echo "::warning::工作流令牌无权创建 Pages 站点。请在仓库 Settings → Pages 把 Source 选为「GitHub Actions」（只需一次，之后每次 push 全自动）。"
+          fi
+          echo "--- 3) 复核 ---"
+          gh api "/repos/${{ github.repository }}/pages" 2>&1 | head -20 || true
+
+      - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
