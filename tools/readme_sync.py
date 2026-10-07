@@ -27,7 +27,16 @@ import argparse
 import os
 import re
 import sys
-from datetime import date
+from datetime import datetime, timedelta, timezone
+
+# 「最后更新」用**固定时区 UTC+8**，不用 date.today()。
+# 原因（2026-10-08 实测）：本机在 UTC+8、CI 跑在 UTC，每天 00:00–08:00（北京时间）
+# 两边算出的日期差一天 → 本机 push「10-08」、CI 回填「10-07」，**来回互写**。
+HKT = timezone(timedelta(hours=8))
+
+
+def today_str():
+    return datetime.now(HKT).date().isoformat()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from catalog import GROUPS, group_of, load_catalog, version_info  # noqa: E402  （单一来源：读者章 / 版本号）
@@ -116,7 +125,7 @@ def render_status(rows, today=None):
     n = len(rows)
     a = sum(1 for r in rows if r["a"])
     pct = round(a / n * 100) if n else 0
-    today = today or date.today().isoformat()
+    today = today or today_str()
     return (
         f"{STATUS_START}\n"
         f"**版本 {VERSION} ｜ 最后更新：{today} ｜ 已收录：{n} 条 ｜ A 级官方信源 {pct}% ｜ "
@@ -191,7 +200,7 @@ def render_llms(rows, today=None):
 
     供 AI 联网检索 / 导入时快速定位：项目是什么、有哪些条目、依据与纠错在哪。
     """
-    today = today or date.today().isoformat()
+    today = today or today_str()
     n = len(rows)
     base = "https://github.com/kk2688qq/dong-hk-guide"
     out = [
