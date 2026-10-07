@@ -3,7 +3,7 @@
 """香港留学指南 · 质检四件套
 
 用法：
-    python tools/check.py            # 跑全部检查
+    python tools/check.py            # 跑全部检查（含读者章分类自检）
     python tools/check.py --only schema refs links promise
 
 设计原则（见设计文档第 5 节）：**故意不挡发布**。
@@ -30,6 +30,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOK = os.path.join(ROOT, "book")
 DOCS = os.path.join(ROOT, "docs", "核实记录")
 CATALOG = os.path.join(ROOT, "docs", "HK编号对照表.md")
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from catalog import (  # noqa: E402
+    GROUP_DESC,
+    GROUP_NAMES,
+    GROUPS,
+    group_of,
+    load_catalog as _catalog_load,
+)
 WHITELIST_DOMAINS = (
     "immd.gov.hk", "edb.gov.hk", "ugc.edu.hk", "info.gov.hk",
     "gov.hk", "elegislation.gov.hk", "censtatd.gov.hk",
@@ -123,7 +132,8 @@ STALE_DAYS = 90
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 
-problems = {k: [] for k in ("schema", "refs", "links", "promise", "staleness", "coverage")}
+problems = {k: [] for k in
+            ("schema", "refs", "links", "promise", "staleness", "coverage", "chapters")}
 
 
 def entries():
@@ -138,25 +148,12 @@ def read(path):
 
 
 def load_catalog():
-    """读 HK编号对照表 → {HK 编号: {num, topic, track, status}}。表不存在时返回 None。"""
-    if not os.path.isfile(CATALOG):
-        return None
-    mapping = {}
-    for line in read(CATALOG).splitlines():
-        m = re.match(
-            r"\|\s*(HK-\d{3})\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)",
-            line,
-        )
-        if not m:
-            continue
-        hk, num, topic, track, status = (g.strip() for g in m.groups())
-        mapping[hk] = {
-            "num": num if re.fullmatch(r"\d{3}", num) else None,
-            "topic": topic,
-            "track": track,
-            "status": status,
-        }
-    return mapping
+    """读 HK编号对照表 → {HK 编号: {num, topic, track, status}}。表不存在时返回 None。
+
+    解析实现在 tools/catalog.py（零依赖单一来源）——此前 check.py 自带一份，
+    与 build_site.py 各写一遍正则，属「同一事实两处实现」，2026-10-07 收敛。
+    """
+    return _catalog_load() or None
 
 
 # ---------------------------------------------------------------- schema
@@ -416,6 +413,50 @@ def check_coverage(files):
     return rate_mis, rate_a
 
 
+def check_chapters(files):
+    """读者章（分类）自检——2026-10-07 董老师定「按读者角色分章」后的机器判据。
+
+    为什么必须机器校验：分类是最容易悄悄烂掉的东西。一条新条目忘了在对照表登记，
+    或「读者章」列手滑写成别的字，阅读器就会把它丢进「其他」组——
+    出现在产物末尾、也不在任何章节导览里，**读者永远看不到，而没人会报错**。
+    README 曾因同样原因漂移过（写着 3 条、实际 18 条），这里就不再靠自觉。
+
+    判据（三条，全部来自单一来源 tools/catalog.py + 对照表）：
+      1. book/ 里每一条都在对照表里登记过（有新条目忘了登记 → 报）；
+      2. 每条的「读者章」取值合法（属于 GROUPS 的章节名 → 否则报）；
+      3. 各章合计 == book/ 条目总数（无遗漏、无重复归章）。
+    """
+    catalog = load_catalog() or {}
+    per_chapter = {name: 0 for name in GROUP_NAMES}
+    unregistered = 0
+    for name in files:
+        text = read(os.path.join(BOOK, name))
+        m = RE_TITLE_HK.match(text.split("\n")[0])
+        hk = m.group(1) if m else ""
+        if hk not in catalog:
+            problems["chapters"].append(
+                f"{name} 不在对照表里（新条目须先在 docs/HK编号对照表.md 登记「读者章」）"
+            )
+            unregistered += 1
+            continue
+        track = catalog[hk]["track"]
+        chapter = group_of(track)
+        if chapter == "其他":
+            problems["chapters"].append(
+                f"{name}（{hk}）的「读者章」取值非法：{track!r}"
+                f"；合法取值只有 {' / '.join(GROUP_NAMES)}"
+            )
+            continue
+        per_chapter[chapter] += 1
+
+    total = sum(per_chapter.values())
+    if not problems["chapters"] and total != len(files):
+        problems["chapters"].append(
+            f"各章合计 {total} 条 ≠ book/ 实际 {len(files)} 条（有 {len(files) - total} 条未归章）"
+        )
+    return per_chapter
+
+
 # ---------------------------------------------------------------- release
 RE_REVIEWED = re.compile(r"最后核实日期\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})")
 
@@ -506,7 +547,7 @@ def render_release(rows):
         "> **排序规则**（判例 16）：风险等级优先（高→中→低），同风险按决策阶段（要不要去→怎么申请→怎么选→怎么落地）。",
         "> **放行单怎么出**：从下表的「可放行」行里挑，填最后一列「本轮指定钩子角度」，作为信件回复即可。**每批 3 条**。",
         "",
-        "| 风险 | 阶段 | HK 编号 | 文件号 | 主题 | 主线 | 证据等级 | 最后核实 | 误传素材 | 判定 | 本轮指定钩子角度 |",
+        "| 风险 | 阶段 | HK 编号 | 文件号 | 主题 | 读者章 | 证据等级 | 最后核实 | 误传素材 | 判定 | 本轮指定钩子角度 |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for r in rows:
@@ -532,6 +573,7 @@ TITLES = {
     "promise": "承诺性表述扫描（保录取 / 百分百 / 稳过）",
     "staleness": f"核实时效（{STALE_DAYS} 天红线）",
     "coverage": "质量覆盖率（误传 ≥50% / A 级 ≥60%）",
+    "chapters": "读者章分类（每条登记且取值合法 / 各章合计 == 条目总数）",
 }
 
 
@@ -575,6 +617,15 @@ def main():
         check_staleness(files)
     if "coverage" in todo:
         stats = check_coverage(files)
+    chapter_counts = None
+    if "chapters" in todo:
+        chapter_counts = check_chapters(files)
+
+    if chapter_counts:
+        print("\n读者章（分类）分布")
+        for gi, (gname, _) in enumerate(GROUPS, 1):
+            print(f"  · 第 {gi} 章 {gname}：{chapter_counts.get(gname, 0)} 条")
+        print(f"  · 合计 {sum(chapter_counts.values())} 条 / book/ 共 {len(files)} 条")
 
     if num_to_hk:
         print("\n编号映射（方案 A）")

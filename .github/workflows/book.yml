@@ -80,7 +80,11 @@ jobs:
           } > dist/head.md
           cat dist/head.md
 
-      - name: Merge chapters by number
+      - name: Merge chapters by 读者章 (tools/merge_order.py)
+        # 产物顺序 = 阅读器顺序 = 「读者章」（2026-10-07 董老师定：按读者的角色分章）。
+        # 此前按文件号拼，PDF/EPUB 的顺序与在线版不一致，按角色来找的人会迷路。
+        # 归章读 docs/HK编号对照表.md 的「读者章」列，章序与副标题读 build_site.GROUPS
+        # ——单一来源，脚本不另存分类表。
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -90,7 +94,6 @@ jobs:
             cat dist/head.md >> dist/full.md
             echo "prepended: dist/head.md（文档信息页首）"
           fi
-          count=0
           # 前置章节（开篇 / 术语表 / 证据分级 / 使用方法 / 免责声明）——WB4-021 第 3 项。
           # 目的是让产物从「一堆条目」变成「一本书」：读者先看到「这本书想回答的问题」。
           # 文件在 meta/ 下、**不在 book/ 中**，因此不参与条目 schema 质检。
@@ -99,12 +102,26 @@ jobs:
             cat "$f" >> dist/full.md
             echo "prepended: $f（前置章节）"
           done
-          # 用 LC_ALL=C 保证按字节序排序 == 按编号排序（001/002/003…）
-          while IFS= read -r f; do
-            printf '\n\n<!-- ===== %s ===== -->\n\n' "$f" >> dist/full.md
-            cat "$f" >> dist/full.md
-            count=$((count + 1))
-          done < <(ls book/*.md | LC_ALL=C sort)
+          # 正文：按「读者章」分组，章首插章节标题，章内按 HK 编号升序
+          count=0
+          while IFS=$'\t' read -r kind val extra; do
+            [ -n "${kind:-}" ] || continue
+            case "$kind" in
+              CHAPTER)
+                printf '\n\n<!-- ===== %s ===== -->\n\n# %s\n\n> %s\n\n---\n\n' \
+                  "$val" "$val" "$extra" >> dist/full.md
+                echo "chapter: $val"
+                ;;
+              FILE)
+                if [ ! -s "$val" ]; then
+                  echo "::error::合并清单里的文件不存在或为空：$val"; exit 1
+                fi
+                printf '\n\n<!-- ===== %s ===== -->\n\n' "$val" >> dist/full.md
+                cat "$val" >> dist/full.md
+                count=$((count + 1))
+                ;;
+            esac
+          done < <(python3 tools/merge_order.py --with-chapters)
           # 页脚（作者 + 联系方式 + 免责 + 版权）并入正文，
           # 确保单独下载 PDF/HTML/EPUB 的读者也能找到作者与联系方式。
           # 该文件不在 book/ 下，因此不参与条目 schema 质检。

@@ -18,7 +18,8 @@ build_site.py 出的是「目录页 + 每条一页」——读者点进去看到
 
 设计原则（与全项目一致）：
 - **不新增任何事实**：所有文字、数字、徽章取值一律从 book/ 正文解析；
-- **单一来源**：主线分组取自 docs/HK编号对照表.md，标题/风险/证据取自正文。
+- **单一来源**：**读者章（分类）取自 docs/HK编号对照表.md 的「读者章」列**，
+  章节顺序与副标题取自 build_site.GROUPS；标题/风险/证据取自正文。
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ except ImportError:  # pragma: no cover
     sys.exit("需要 markdown 库：pip3 install markdown")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_site import GROUPS, group_of, load_catalog  # noqa: E402
+from catalog import GROUPS, group_of, load_catalog  # noqa: E402  （单一来源：读者章）
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOK = os.path.join(ROOT, "book")
@@ -448,7 +449,22 @@ details.howto[open]>summary::before{transform:rotate(90deg)}
 .fstat b{color:var(--fg);font-weight:600}
 .fstat a{color:var(--acc)}
 
-/* ---------- 主线分组 ---------- */
+/* ---------- 读者章（分类）：章首标签 + 顶部章节导航 ---------- */
+.grp>h2 .chn{font:600 var(--fs-xs)/1.6 var(--font-sans);color:var(--acc);
+  border:1px solid var(--acc);border-radius:var(--radius-pill);padding:1px 9px;white-space:nowrap}
+.chaps{margin:14px 0 2px}
+.chaps .ct{font-size:var(--fs-sm);color:var(--fg2);margin-bottom:8px}
+.chaps .ct b{color:var(--fg)}
+.crows{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.crows::-webkit-scrollbar{display:none}
+.crows a{flex:none;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 13px;
+  border:1px solid var(--line-ui);background:var(--surface);border-radius:var(--radius-pill);
+  font-size:13.5px;color:var(--fg2)}
+.crows a b{color:var(--acc);font-weight:600}
+.crows a .cn{font-size:var(--fs-2xs);color:var(--mut);font-variant-numeric:tabular-nums}
+
+/* ---------- 读者章分组 ---------- */
 .grp{margin:26px 0 0}
 .grp[hidden]{display:none}
 .grp>h2{font-size:var(--fs-h2);margin:0 0 4px;padding-top:14px;border-top:2px solid var(--fg);
@@ -754,18 +770,23 @@ def fbtn(field: str, value: str, label: str, pressed: bool = False) -> str:
 def build_page(entries: list[dict], online: bool, stamp: str = "") -> str:
     toc = []
     body = []
-    for gname, _ in GROUPS:
+    # 读者章（分类）：归章读 docs/HK编号对照表.md 的「读者章」列；
+    # GROUPS 只给顺序与副标题（详见 build_site.GROUPS 注释）。
+    for gi, (gname, gdesc) in enumerate(GROUPS, 1):
         bucket = [e for e in entries if e["group"] == gname]
         if not bucket:
             continue
         body.append(
-            f'<section class="grp" data-group="{html.escape(gname)}">'
-            f"<h2>{html.escape(gname)}<span class=\"n\"></span></h2>"
+            f'<section class="grp" id="grp-{gi}" data-group="{html.escape(gname)}">'
+            f'<h2><span class="chn">第 {gi} 章</span>{html.escape(gname)}'
+            f'<span class="n"></span></h2>'
+            f'<p class="gd">{html.escape(gdesc)}</p>'
             + "".join(card(e, i + 1) for i, e in enumerate(bucket))
             + "</section>"
         )
         toc.append(
-            f"{html.escape(gname)}（{len(bucket)} 条）"
+            f'<a href="#grp-{gi}"><b>第 {gi} 章</b>{html.escape(gname)}'
+            f'<span class="cn">{len(bucket)}</span></a>'
         )
     placed = {g for g, _ in GROUPS}
     rest = [e for e in entries if e["group"] not in placed]
@@ -792,6 +813,15 @@ def build_page(entries: list[dict], online: bool, stamp: str = "") -> str:
         else f'<br>这是<b>离线副本</b>，生成于 {stamp}。正文会继续更新，'
         f'以 <a href="{SITE}">在线版</a> 为准。'
     )
+
+    chaps = ""
+    if toc:
+        chaps = (
+            '<nav class="chaps" aria-label="按你是谁读">'
+            '<div class="ct"><b>按你是谁读</b>——'
+            "全书按读者分章，只看你那一章，别的不用管</div>"
+            '<div class="crows">' + "".join(toc) + "</div></nav>"
+        )
 
     page = f"""<!doctype html>
 <html lang="zh-Hans">
@@ -832,6 +862,7 @@ else if(s==='light')document.documentElement.className='light';}}catch(e){{}}}})
     <details class="howto" id="howto">
       <summary>怎么看最快 · 怎么筛 · 不想全做也行</summary>
       <div class="howto-in">
+        <p><b>先认自己：</b>全书按<b>读这本书的是谁</b>分成六章（孩子在读中小学 / 申本科 / 读国际课程 / 申硕士 / 办身份 / 防骗与通用）。<b>只看你那一章</b>，别的不用管——上面那条带子就是章节入口。</p>
         <p><b>怎么看最快</b>：每条第一块的<b>方框</b>就是「说人话」——把这一条的关键结论压成几句话，只看它就够拿主意。要核对数字、要看官方原文，再展开下面的折叠。</p>
         <p><b>不用全做</b>：这是按风险高低排好的<b>备选单</b>，不是任务清单。挑走一条就算数。</p>
         <p><b>怎么筛</b>：上面搜关键词；下面按<b>风险、决策阶段、证据等级</b>筛；按 <b>/</b> 直接跳到搜索框。<a href="#" id="foldall" data-open="0">展开全部明细</a>（PDF 打印用）。</p>
@@ -840,6 +871,8 @@ else if(s==='light')document.documentElement.className='light';}}catch(e){{}}}})
 
     <div class="dl">{dl}</div>
   </div>
+
+  {chaps}
 
   <div class="filters">
     <div class="frows">

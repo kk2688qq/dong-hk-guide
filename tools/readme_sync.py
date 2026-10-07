@@ -5,9 +5,10 @@
 问题（028 实测）：README 写着「已收录 3 条 / 全部为 A 级」，实际已是 18 条、A 级 78%
 ——**双重漂移**（条数 + 等级），且目录表只列 3 条。根因：README 靠人手改，没人改就烂。
 
-处理：把 README 里两块「机器可判定」的内容，按 `book/` 实际内容重写——
+处理：把 README 里三块「机器可判定」的内容，按 `book/` 实际内容重写——
   1) 状态行（最后更新 / 已收录 N 条 / A 级 x% / 待核实项）
-  2) 目录表（HK 编号 | 条目 | 证据 | 最后核对）
+  2) 章节导览（按你是谁读：六章各含哪几条 —— 归章读对照表「读者章」列，2026-10-07 加）
+  3) 目录表（HK 编号 | 条目 | 证据 | 最后核对）
 
 由 CI（`.github/workflows/book.yml`）在每次 push 后执行并回提交。
 **只在 markers 之间改写，markers 之外一个字不动。**
@@ -15,6 +16,7 @@
 机器验收（017 判据）：
   README 条数      ==  ls book/*.md | wc -l
   README A 级百分比 ==  脚本算出的值
+  README 章节导览   ==  对照表「读者章」列的分组结果（六章合计 == 总条数）
 
 用法：
     python tools/readme_sync.py            # 回填
@@ -26,6 +28,9 @@ import os
 import re
 import sys
 from datetime import date
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from catalog import GROUPS, group_of, load_catalog  # noqa: E402  （单一来源：读者章）
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOK = os.path.join(ROOT, "book")
@@ -42,6 +47,9 @@ TOC_START = "<!-- README:TOC:START -->"
 TOC_END = "<!-- README:TOC:END -->"
 LEAD_START = "<!-- README:LEAD:START -->"
 LEAD_END = "<!-- README:LEAD:END -->"
+CHAPS_START = "<!-- README:CHAPTERS:START -->"
+CHAPS_END = "<!-- README:CHAPTERS:END -->"
+
 
 
 def entries():
@@ -56,7 +64,8 @@ def read(path):
 
 
 def collect():
-    """返回 [{hk, num, title, link, level, reviewed, a}]"""
+    """返回 [{hk, num, title, link, level, reviewed, a, chapter}]"""
+    catalog = load_catalog()
     rows = []
     for name in entries():
         text = read(os.path.join(BOOK, name))
@@ -71,9 +80,11 @@ def collect():
         mr = RE_REVIEWED.search(text)
         reviewed = mr.group(1) if mr else "—"
         link = "./book/" + name
+        chapter = group_of(catalog.get(hk, {}).get("track", ""))
         rows.append({
             "hk": hk, "num": name[:3], "title": title, "link": link,
             "level": level, "reviewed": reviewed, "a": level == "A",
+            "chapter": chapter,
         })
     return rows
 
@@ -117,6 +128,44 @@ def render_toc(rows):
     for r in sorted(rows, key=key):
         out.append(f"| {r['hk']} | [{r['title']}]({r['link']}) | {r['level']} | {r['reviewed']} |")
     out.append(TOC_END)
+    return "\n".join(out)
+
+
+def render_chapters(rows):
+    """「按你是谁读」章节导览——**章节归属由脚本回填**，杜绝「README 说 5 章、实际 6 章」漂移。
+
+    归章读 docs/HK编号对照表.md 的「读者章」列，章序与副标题读 tools/catalog.py 的 GROUPS。
+    读者先认自己（张三是来看本科的、李四是来看申硕的），只看自己那一章。
+    """
+    def hk_key(r):
+        m = re.search(r"(\d+)$", r["hk"])
+        return (0, int(m.group(1))) if m else (1, r["num"])
+
+    out = [
+        CHAPS_START,
+        "**先认自己**：全书按**读这本书的是谁**分成六章。找到你那一行，点 HK 编号直接看——别的章不用管。",
+        "",
+        "| 章 | 这一章是给谁的 | 包含条目（点编号直接看） |",
+        "| --- | --- | --- |",
+    ]
+    counts = []
+    for gi, (gname, gdesc) in enumerate(GROUPS, 1):
+        bucket = sorted([r for r in rows if r["chapter"] == gname], key=hk_key)
+        if not bucket:
+            continue
+        counts.append(f"第 {gi} 章 {len(bucket)} 条")
+        links = " · ".join(f"[{r['hk']}]({r['link']})" for r in bucket)
+        out.append(f"| **第 {gi} 章 · {gname}** | {gdesc} | {links} |")
+    rest = sorted([r for r in rows if r["chapter"] not in [g for g, _ in GROUPS]], key=hk_key)
+    if rest:  # 理论上不该出现（check.py 会拦），但绝不静默丢条目
+        links = " · ".join(f"[{r['hk']}]({r['link']})" for r in rest)
+        out.append(f"| **未归章**（待修） | —— | {links} |")
+    out += [
+        "",
+        f"> 合计 **{len(rows)} 条**（{' ｜ '.join(counts)}）。**一条只归一章**，"
+        "章归属由 `docs/HK编号对照表.md` 的「读者章」列决定，本表由 CI 自动回填、不手改。",
+        CHAPS_END,
+    ]
     return "\n".join(out)
 
 
@@ -197,6 +246,7 @@ def main():
     text = read(README)
     new = replace_block(text, LEAD_START, LEAD_END, render_lead(rows))
     new = replace_block(new, STATUS_START, STATUS_END, render_status(rows))
+    new = replace_block(new, CHAPS_START, CHAPS_END, render_chapters(rows))
     new = replace_block(new, TOC_START, TOC_END, render_toc(rows))
 
     llms = render_llms(rows)

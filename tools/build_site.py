@@ -5,7 +5,7 @@
 设计原则（与项目的「AI 可读层」一致）：
 - **不新增任何事实**：只把 book/ 已有正文渲染成 HTML，数字与口径一律不动。
 - **单一来源**：条目标题 / 风险导向 / 证据等级一律从 book/ 正文解析，
-  对照表（docs/HK编号对照表.md）只用于「主线分组」与「状态」。
+  对照表（docs/HK编号对照表.md）只用于「读者章（分类）」与「状态」。
 - **对 AI 友好**：站点根目录落 llms.txt、robots.txt、llms-full.txt（全文合并），
   并提供 sitemap.xml。
 - **对读者友好**：index.html 是目录页，每条一页，另有 book.html（单文件全书）。
@@ -42,6 +42,17 @@ CATALOG = os.path.join(DOCS, "HK编号对照表.md")
 BASE_URL = os.environ.get("SITE_BASE_URL", "https://kk2688qq.github.io/dong-hk-guide").rstrip("/")
 BOOK_TITLE = "董老师香港留学指南"
 
+# 读者章（分类）与对照表解析：**单一来源在 tools/catalog.py**（零依赖），
+# 这里只做转出，供 build_reader.py 沿用 `from build_site import GROUPS, group_of` 的调用方式。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from catalog import (  # noqa: E402
+    GROUP_DESC,
+    GROUP_NAMES,
+    GROUPS,
+    group_of,
+    load_catalog,
+)
+
 # ---------------------------------------------------------------- 解析
 
 RE_TITLE = re.compile(r"^#\s+(HK-\d{3})\s+(.+?)\s*$")
@@ -55,27 +66,6 @@ RE_LASTCHECK = re.compile(r"最后核实日期\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
 def read(path: str) -> str:
     with open(path, encoding="utf-8") as fh:
         return fh.read()
-
-
-def load_catalog() -> dict:
-    """读对照表 → {HK号: {num, topic, track, status}}。"""
-    out: dict = {}
-    if not os.path.isfile(CATALOG):
-        return out
-    for line in read(CATALOG).splitlines():
-        m = re.match(
-            r"\|\s*(HK-\d{3})\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)", line
-        )
-        if not m:
-            continue
-        hk, num, topic, track, status = (g.strip() for g in m.groups())
-        out[hk] = {
-            "num": num if re.fullmatch(r"\d{3}", num) else None,
-            "topic": topic,
-            "track": track,
-            "status": status,
-        }
-    return out
 
 
 def parse_entry(name: str, text: str) -> dict:
@@ -122,28 +112,12 @@ def parse_entry(name: str, text: str) -> dict:
 
 
 # ---------------------------------------------------------------- 分组
-# 把对照表的「主线」列收敛为读者视角的 5 个分区（顺序＝阅读顺序）。
-# 「升学」与「升学（本科·…）」合并为一组放最前：它们都是本科阶段或通用决策，
-# 读者来找「上本科」的事，不该被拆到两个标题下面（2026-10-07 定）。
-GROUPS = (
-    ("本科申请与通用（先读）", ("升学", "本科", "打假")),
-    ("中学择校插班", ("中学",)),
-    ("本科申硕", ("申硕",)),
-    ("身份路径", ("身份",)),
-    ("防骗 · 索引 · 工具", ("共同",)),
-)
+# **读者章**（2026-10-07 董老师定：「按用户对需求来分类，分成章节」）。
+# 定义已抽到 tools/catalog.py（单一来源，零依赖）：每条归哪一章写在
+# docs/HK编号对照表.md 的「读者章」列，章节顺序与副标题写在 catalog.GROUPS。
+# 2026-10-07 前的旧分组按「主题」（升学 / 身份 / 共同）划分，家长和本科生
+# 混在同一章；现按读者角色分章：张三是来看本科的、李四是来看申硕的。
 
-
-def group_of(track: str) -> str:
-    if "中学" in track:
-        return "中学择校插班"
-    if "申硕" in track:
-        return "本科申硕"
-    if "身份" in track:
-        return "身份路径"
-    if "共同" in track:
-        return "防骗 · 索引 · 工具"
-    return "本科申请与通用（先读）"
 
 
 # ---------------------------------------------------------------- 渲染
@@ -170,6 +144,7 @@ word-break:break-all}
 a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
 hr{border:0;border-top:1px solid var(--line);margin:2.2em 0}
 .lede{font-size:.98em;color:var(--mut)}
+.gdesc{font-size:.92em;color:var(--mut);margin:-2px 0 12px}
 .intro{background:var(--card);border:1px solid var(--line);border-radius:10px;
 padding:14px 16px;margin:1.2em 0}
 .card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:.7em 0;
@@ -421,15 +396,18 @@ def main() -> int:
     parts.append('<div class="fcount" id="cnt"></div>')
     parts.append("</div>")
 
-    for gname, _ in GROUPS:
+    for gi, (gname, gdesc) in enumerate(GROUPS, 1):
         bucket = [e for e in entries if e["group"] == gname]
         if not bucket:
             continue
-        parts.append(f'<section class="grp" data-group="{html.escape(gname)}">')
         parts.append(
-            f"<h2>{html.escape(gname)}"
+            f'<section class="grp" id="grp-{gi}" data-group="{html.escape(gname)}">'
+        )
+        parts.append(
+            f"<h2>第 {gi} 章 · {html.escape(gname)}"
             f'<span class="lede cnt">（{len(bucket)} 条）</span></h2>'
         )
+        parts.append(f'<div class="gdesc">{html.escape(gdesc)}</div>')
         for e in bucket:
             who = f'<div class="lede">{html.escape(e["who"])}</div>' if e["who"] else ""
             lede = f'<div class="lede">{html.escape(e["lede"])}</div>' if e["lede"] else ""
