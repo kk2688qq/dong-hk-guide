@@ -569,7 +569,8 @@ python tools/check.py --release     # 生成 docs/放行候选.md（该文件为
 **三项边界裁定**
 
 1. **AI 可读层**：先做**零成本部分**（本仓库内）；**开站点（路径二）单独立项**。
-   → **2026-10-07 更新**：董老师已确认**开 GitHub Pages**（WB4-021 转达，理由：内地可搜、AI 可抓）。**阶段 5 已落地**（见下）。
+   → **2026-10-07 更新**：董老师已确认**开 GitHub Pages**（WB4-021 转达，理由：内地可搜、AI 可抓），
+   并已于 **12:23 本人开启、站点上线（实测全部 200）**。**阶段 5 已上线**（见下）。
 2. **纠错台账**：**不写联系方式**；九列字段；随 Release 发布并合进单文件 HTML。
 3. **四引擎**（AI 引用 / 搜索 / 短视频 / 转发）写进项目口径与看板——**AI 引用是慢变量但复利**。
 
@@ -593,9 +594,18 @@ python tools/check.py --release     # 生成 docs/放行候选.md（该文件为
     但 `outcome` 仍是 `failure`，只有 `conclusion` 才是 success——写 `if:` 必须用 `outcome`**）；
   - 未开启时写 `$GITHUB_STEP_SUMMARY` + `::warning::`，把「怎么开」直接写进 CI 页面。
   - **另注**：`secrets` 上下文在 step 的 `if:` 里不可用 → 经 **job 级 `env`** 传递后再在 `if` 里判 `env.X`。
-- **仍需人工一次（约 30 秒）**：Settings → Pages → Source 选「**GitHub Actions**」。
-  或在仓库 Secrets 配 **`GH_PAGES_TOKEN`**（细粒度 PAT，含 Pages 读写）→ 兜底步骤会自动创建站点。
-  **两者都没做 = 站点不发布，但单文件版（HTML/PDF/EPUB + Release）照常发布**——这是刻意的失败隔离。
+- **✅ 2026-10-07 12:23 已开启并上线（本条结案）**：董老师**本人**在仓库 Settings → Pages 把 Source 置为
+  「**GitHub Actions**」，走**路径 A（界面设置）**，**不配 `GH_PAGES_TOKEN`**——少一个长期有效的高权限密钥。
+  首次部署 run `37571256764`（commit `5eb9e0f`）`completed/success`；关键是
+  **`Configure Pages（① 默认令牌）` 变 success、`Deploy to GitHub Pages` success**（开启前这两步必失败），
+  「未开启 → 警示」步骤正确 skipped、PAT 兜底步骤正确 skipped。
+  **站点实测（2026-10-07）**：首页 / `robots.txt` / `llms.txt` / `llms-full.txt` / `sitemap.xml`（**56 个 URL**）/
+  `book.html` / `entry-HK-*.html` **全部 200**；`llms.txt` 正文写着「共 48 条，更新于 2026-10-07」＝本版书。
+  → 自该时刻起本指南**进入公开可检索状态**，阶段 4 的「被 AI 引用次数」观察指标**开始计时**（仍为观察指标，不作考核）。
+- **历史备用路径（未采用，保留）**：在仓库 Secrets 配 **`GH_PAGES_TOKEN`**（细粒度 PAT，含 Pages 读写）→
+  兜底步骤会自动创建站点。该步骤留作将来万一的备份，**不配就不触发**。
+- **失败隔离仍然有效**：`pages` 任务 `continue-on-error: true` —— **站点开启/部署失败绝不允许
+  影响单文件版发布**（同 `check.py` 的设计原则：门禁只管新增内容质量，不挡既有内容可用性）。
 - **刻意的失败隔离**：`pages` 任务 `continue-on-error: true` —— **站点开启/部署失败绝不允许
   影响单文件版发布**（同 `check.py` 的设计原则：门禁只管新增内容质量，不挡既有内容可用性）。
 - **不新增事实**：`build_site.py` 只渲染 `book/` 已有正文，标题/风险/等级一律从正文解析，
@@ -632,7 +642,7 @@ python tools/readme_sync.py --check   # 校验是否已同步（不同步退出�
 | 2 扩张·AI 层 | `llms.txt` + `robots.txt` + `LICENSE` + 产物页首「版本号 + 引用格式」 | ✅ 本次落地 |
 | 3 扩张·台账 | `docs/纠错台账.md`（九列）+ AI 挑错工序（判例 20） | ✅ 本次落地：九列 + 首条实记录；台账**已合进单文件产物**（`dist/full.md` 附录）**并作为 Release 资产随 `book-latest` 发布** |
 | 4 持续 | 每周一批（3 内容 + 3 视频 + 1 封面）；AI 引用监测（每月 5 问 × 3 AI） | ⚪ 待 WB4 排 |
-| 5 站点 | GitHub Pages（`tools/build_site.py` + `book.yml` 的 `pages` 任务）＋ **站点检索筛选**（关键词／风险／阶段／证据，纯前端）；**另有书级前置章节 7 页**（`meta/front-*.md`，并入单文件产物） | ✅ 2026-10-07 落地（**代码已就位**；Pages 站点本身仍需人工一次开启，见上） |
+| 5 站点 | **已上线** <https://kk2688qq.github.io/dong-hk-guide/>（`tools/build_site.py` + `book.yml` 的 `pages` 任务）＋ **站点检索筛选**（关键词／风险／阶段／证据，纯前端）；**另有书级前置章节 7 页**（`meta/front-*.md`，并入单文件产物） | ✅ **2026-10-07 已上线**（董老师 12:23 本人开启 Source=GitHub Actions；首次部署 run `37571256764` 成功，全站实测 200） |
 | 6 书骨架 | WB4-022 的 9 项书级章节（导语／问题表／怎么读／条目示例／证据分级／风险分档／术语表／分节目录／许可免责） | ✅ 2026-10-07 落地（见「十六」） |
 
 **止损线**：AI 引用连续 3 个月零命中 → 暂停站点投入，回退「路径一」为主。「被 AI 引用次数」是**观察指标**，不作为考核。
