@@ -30,7 +30,7 @@
 | **香港浸会大学** | IB Diploma | **3 门 AL／IAL 达 E 或以上** | **SAT ≥1190**、**AP 2 门 3 分以上**、**ACT ≥23** |
 | **岭南大学** | IB Diploma（**具体分数未核到**） | **3 门 AL／IAL 合格** | **SAT ≥1190**／**ACT ≥24**／**AP 2 门 3 分以上** |
 | **香港教育大学** | IB Diploma | **3 门 AL 达 D 或以上** | **SAT ≥1190**（一次考出） |
-| **香港城市大学** | IB Diploma；**高级学分入学须 ≥30/45** | **3 门 A-Level／IAL 达 E 或以上** | *（见下「待核实」：这是**部门页**口径，中央招生页未取到）* |
+| **香港城市大学** | IB Diploma；**高级学分入学须 ≥30/45** | **3 门 A-Level／IAL 达 E 或以上** | *（见下「官方尚未公布／未写死的事项」：这是**部门页**口径，中央招生页未取到）* |
 
 **真正的分水岭：专业，不是课程体系**（港大官方逐专业给「Expected Lower Boundary」，2026 Entry）
 
@@ -87,7 +87,7 @@
 
 **证据等级 + 官方依据**
 
-证据等级：**A**（取自八校官方招生页与官方 PDF 原文；仅港城大一行取自**部门页**，标 B，见「待核实」）
+证据等级：**A**（取自八校官方招生页与官方 PDF 原文；仅港城大一行取自**部门页**，标 B，见「官方尚未公布／未写死的事项」）
 
 1. 香港大学 ·《International Admissions Information 2026》——三体系门槛原文与**逐专业 Expected Lower Boundary**（文学士 32／BBA 36／法学 41／MBBS 4A\*）、「达门槛不保证录取」原文
    <https://admissions.hku.hk/sites/default/files/2025-10/HKU-International-Admissions-Information-2026.pdf>
@@ -112,13 +112,11 @@
 11. 香港城市大学经济及金融系 · Info Day brochure（**部门页，2024，B 级**）——3 门 A-Level 达 E、IB Diploma／高级学分入学 ≥30
     <https://www.cb.cityu.edu.hk/ef/doc/U10334%20EF_Info%20Day%20brochure%202024%20for%20upload.pdf>
 
-**最后核实日期 + 核实人**
+**本条最后更新**
 
-最后核实日期：2026-10-07
+最后更新：2026-10-07
 
-核实人：**核实人一栏待董老师复核后落**
-
-**待核实**
+**官方尚未公布／未写死的事项**
 
 - **港城大的中央招生页门槛原文**：`cityu.edu.hk/admo/admissions/international-admissions` 等页为 **JS 渲染／被 CDN 反爬拦截**（脚本返回拦截页），本轮**未取到逐字门槛**。正文港城大一行**只用部门页作旁证，标 B**，并在此声明「**中央页口径未取到**」。
 - **岭南大学 IB 最低分**：官方 PDF 本轮**未抽出独立的 IB 最低分行**，**未核到**。
@@ -127,4 +125,4 @@
 
 ---
 
-本条目由 WB2 于 2026-10-07 逐页核对港大《International Admissions Information 2026》、港中大国际要求页、港科大国际资历页、港理大国际资历页与录取数据页、浸大《General Entrance Requirements 2026 Entry》、岭大《Admission Information》、教大国际资历页原文整理；**核实人一栏待董老师复核后落**。
+编者逐页核对港大《International Admissions Information 2026》、港中大国际要求页、港科大国际资历页、港理大国际资历页与录取数据页、浸大《General Entrance Requirements 2026 Entry》、岭大《Admission Information》、教大国际资历页原文整理

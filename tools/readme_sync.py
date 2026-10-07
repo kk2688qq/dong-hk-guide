@@ -6,7 +6,7 @@
 ——**双重漂移**（条数 + 等级），且目录表只列 3 条。根因：README 靠人手改，没人改就烂。
 
 处理：把 README 里三块「机器可判定」的内容，按 `book/` 实际内容重写——
-  1) 状态行（最后更新 / 已收录 N 条 / A 级 x% / 待核实项）
+  1) 状态行（最后更新 / 已收录 N 条 / A 级 x% / 官方尚未公布项）
   2) 章节导览（按你是谁读：六章各含哪几条 —— 归章读对照表「读者章」列，2026-10-07 加）
   3) 目录表（HK 编号 | 条目 | 证据 | 最后核对）
 
@@ -30,7 +30,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from catalog import GROUPS, group_of, load_catalog  # noqa: E402  （单一来源：读者章）
+from catalog import GROUPS, group_of, load_catalog, version_info  # noqa: E402  （单一来源：读者章 / 版本号）
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOK = os.path.join(ROOT, "book")
@@ -39,7 +39,7 @@ LLMS = os.path.join(ROOT, "llms.txt")
 
 RE_TITLE_HK = re.compile(r"^#\s+(HK-\d{3})\s+(.+)$")
 RE_EVIDENCE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
-RE_REVIEWED = re.compile(r"最后核实日期\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})")
+RE_REVIEWED = re.compile(r"最后更新\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})")
 
 STATUS_START = "<!-- README:STATUS:START -->"
 STATUS_END = "<!-- README:STATUS:END -->"
@@ -49,6 +49,16 @@ LEAD_START = "<!-- README:LEAD:START -->"
 LEAD_END = "<!-- README:LEAD:END -->"
 CHAPS_START = "<!-- README:CHAPTERS:START -->"
 CHAPS_END = "<!-- README:CHAPTERS:END -->"
+
+# 版本号（026 C-2）：**单一来源是 `meta/about.md`**，此处不再另写一份常量——
+# README 状态行与站点页脚（build_site.py）都走 catalog.version_info()（判例 15）。
+_VERSION, VERSION_DATE = version_info()
+VERSION = _VERSION
+if not VERSION:
+    print(
+        "::warning::meta/about.md 里找不到「版本 vX.Y · YYYY-MM-DD」，README 状态行将缺版本号",
+        file=sys.stderr,
+    )
 
 
 
@@ -109,8 +119,8 @@ def render_status(rows, today=None):
     today = today or date.today().isoformat()
     return (
         f"{STATUS_START}\n"
-        f"**最后更新：{today} ｜ 已收录：{n} 条 ｜ A 级官方信源 {pct}% ｜ "
-        f"待核实项：公开显示在各条目内**\n"
+        f"**版本 {VERSION} ｜ 最后更新：{today} ｜ 已收录：{n} 条 ｜ A 级官方信源 {pct}% ｜ "
+        f"官方尚未公布项：公开显示在各条目内**\n"
         f"{STATUS_END}"
     )
 
@@ -195,7 +205,7 @@ def render_llms(rows, today=None):
         "",
         "证据分级：**A**＝官方原文（入境处、教育局、教资会、联招处、考评局、大学官网、"
         "香港法例库、政府新闻公报）；**B**＝官方二手（统计报告 / 问答页）；**C**＝作者经验（显式标注）。"
-        "查不到原文的数字一律标「待核实」，不凭记忆填。",
+        "查不到原文的数字一律标「官方尚未公布」，不凭记忆填。",
         "",
         "## 指南全文",
         "",
@@ -220,10 +230,10 @@ def render_llms(rows, today=None):
         "",
         "## 核实与纠错",
         "",
-        "- 每条含「常见误传」（网络流传说法 ↔ 官方原文对照）与「最后核实日期 + 核实人」。",
+        "- 每条含「常见误传」（网络流传说法 ↔ 官方原文对照）与「本条最后更新」。",
         "- [核实记录 ./docs/核实记录/](./docs/核实记录/)——每个数字出自哪份官方文件，含刻意未写死的项与原因。",
         "- [纠错台账 ./docs/纠错台账.md](./docs/纠错台账.md)——被质疑过、核查过、修正过或被驳回的记录（只追加）。",
-        "- 发现问题：在本仓库开 issue，或微信 **jack787300**。",
+        "- 发现问题：在本仓库开 issue，或微信 **jack787300**、**dxw22465**，邮箱 **kk2688@agent.qq.com**。",
         "",
         "## Optional",
         "",

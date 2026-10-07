@@ -172,6 +172,11 @@ li { margin: .3em 0; }
   h1 { margin-top: 1.6em; page-break-after: avoid; }
   h2, h3 { page-break-after: avoid; }
   table, blockquote { page-break-inside: avoid; }
+  /* 显式分页符：正文里 <div style="page-break-after: always;"></div>（WB4-026 C-4）。
+     weasyprint 会直接吃内联样式；这条是兜底——万一内联样式被 reset 或被
+     markdown 处理器改写，块级 div 仍按「其后另起一页」处理。
+     EPUB / 单文件 HTML 里它是个空 div，无副作用。 */
+  div[style*="page-break"] { page-break-after: always; break-after: page; }
   a { color: #0b5cad; }
 }
 </style>

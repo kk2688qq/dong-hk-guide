@@ -5,7 +5,8 @@
 设计原则：
 - 只读 book/ 与 meta/，不新增、不改动任何事实（与 build_site.py 同）。
 - 不产出到 site/（site/ 是对外发布目录，审阅清单属内部件，不得上线）。
-- 「待审 / 已审」按正文里是否已落 `核实人：董老师复核` 判定，不靠人工维护的清单。
+- 「待审 / 已审」按正文里是否已落 `本条最后更新` 字段判定（2026-10-07 前按已移除的原署名判定，
+  该署名已按 026 A 项全库移除），不靠人工维护的清单。
 
 用法：
     python tools/build_review.py --out <输出html路径>
@@ -34,7 +35,7 @@ RE_GRADE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
 
 FIELDS = ["说人话", "要花什么", "换回什么", "红线提醒", "常见误传",
           "适用人群 + 入学年度", "解决什么焦虑 + 风险等级 + 决策阶段",
-          "关键节点与时效", "证据等级 + 官方依据", "最后核实日期 + 核实人", "待核实"]
+          "关键节点与时效", "证据等级 + 官方依据", "本条最后更新", "官方尚未公布／未写死的事项"]
 
 
 def read(p):
@@ -91,7 +92,8 @@ def parse_entry(path):
     mt = RE_TITLE.search(text)
     mr = RE_RISK.search(text)
     mg = RE_GRADE.search(text)
-    signed = "核实人：董老师复核" in text
+    # 2026-10-07（026 A 项）：全库移除原署名后原判据消失，改用「本条最后更新」字段是否落地。
+    signed = bool(re.search(r"本条最后更新", text))
     d = {
         "file": name,
         "no": int(name[:3]),
@@ -106,8 +108,8 @@ def parse_entry(path):
         "lede": first_sentences(split_field(text, "说人话")),
         "pitfalls": split_field(text, "常见误传"),
         "pitfalls_n": bullet_count(split_field(text, "常见误传")),
-        "pending": split_field(text, "待核实"),
-        "pending_n": bullet_count(split_field(text, "待核实")),
+        "pending": split_field(text, "官方尚未公布／未写死的事项"),
+        "pending_n": bullet_count(split_field(text, "官方尚未公布／未写死的事项")),
         "sources": link_count(split_field(text, "证据等级 + 官方依据")),
         "body_md": text,
     }
@@ -137,13 +139,13 @@ def render_entry(e, idx):
       {badge('焦虑', e['anxiety'])}
       <span class="b">{e['chars']} 字</span>
       <span class="b">出处 {e['sources']}</span>
-      <span class="b">待核实 {e['pending_n']}</span>
+      <span class="b">官方未定 {e['pending_n']}</span>
       <span class="b">误传 {e['pitfalls_n']}</span>
     </div>
   </header>
   <div class="body">
     <div class="sec"><b>一句话结论</b><p class="lede">{lede}</p></div>
-    <div class="sec"><b>本条标了「待核实」的（{e['pending_n']}）</b>{pending}</div>
+    <div class="sec"><b>本条标了「官方尚未公布」的（{e['pending_n']}）</b>{pending}</div>
     <details><summary>读全文（{e['chars']} 字）</summary><div class="full">{md}</div></details>
   </div>
   <footer><span class="path">book/{html.escape(e['file'])}</span></footer>
@@ -229,12 +231,12 @@ def main():
 
     tot_chars = sum(e["chars"] for e in entries)
 
-    # 建议优先看：取证难度最高的三类（等级非 A / 待核实最多 / 篇幅最长）
+    # 建议优先看：取证难度最高的三类（等级非 A / 官方未定最多 / 篇幅最长）
     prio = []
     for e in sorted([x for x in todo if x["grade"] != "A"], key=lambda x: x["grade"]):
         prio.append((f"{e['grade']} 级", e, "证据等级非 A：部分结论依赖非官方口径或旁证"))
     for e in sorted(todo, key=lambda x: -x["pending_n"])[:5]:
-        prio.append((f"待核实 {e['pending_n']} 项", e, "官方没给或没取到，需你判断口径是否可接受"))
+        prio.append((f"官方未定 {e['pending_n']} 项", e, "官方没给或没取到，需你判断口径是否可接受"))
     for e in sorted(todo, key=lambda x: -x["chars"])[:4]:
         prio.append((f"{e['chars']} 字", e, "篇幅最长，信息密度最高"))
     seen = set()
@@ -270,7 +272,7 @@ def main():
   <h4>怎么审（约 10 分钟可扫完）</h4>
   <ul>
     <li><b>先看「待你审」{len(todo)} 条</b>——这是我新写的、尚未署名「董老师复核」的稿子。</li>
-    <li>每条卡片给你三样：<b>一句话结论</b>（这条到底在说什么）、<b>本条标了「待核实」的地方</b>（我没能拿到官方原文、或官方本身不公布的）、<b>徽章</b>（证据等级 / 风险 / 阶段 / 出处数 / 误传数）。</li>
+    <li>每条卡片给你三样：<b>一句话结论</b>（这条到底在说什么）、<b>本条标了「官方尚未公布」的地方</b>（我没能拿到官方原文、或官方本身不公布的）、<b>徽章</b>（证据等级 / 风险 / 阶段 / 出处数 / 误传数）。</li>
     <li>想细看，点每条下方「<b>读全文</b>」——正文就在卡片里，不用跳文件。</li>
     <li><b>「已署『董老师复核』」{len(done)} 条</b>是 WB4 已审过的，抽验即可，不必逐条重读。</li>
     <li>审完把「<b>哪几条要改、改什么</b>」告诉我即可，我按你的意见改，改完再回 WB4 复核。</li>

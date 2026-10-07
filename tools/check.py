@@ -97,8 +97,8 @@ REQUIRED_FIELDS = (
     ("8 红线提醒", r"红线提醒"),
     ("9 常见误传", r"常见误传"),
     ("10 证据等级 + 官方依据", r"官方依据"),
-    ("11 最后核实日期 + 核实人", r"最后核实日期"),
-    ("12 待核实标记", r"待核实"),
+    ("11 本条最后更新", r"本条最后更新"),
+    ("12 官方尚未公布／未写死的事项", r"官方尚未公布"),
 )
 # 证据等级写法兼容：**证据等级**：A ／ 证据等级：**A**
 RE_EVIDENCE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
@@ -187,8 +187,8 @@ def check_schema(files):
 
         if not RE_EVIDENCE.search(text):
             problems["schema"].append(f"{name} 证据等级格式不对（应形如「证据等级：**A**」）")
-        if "本条目由" not in text or "核对" not in text:
-            problems["schema"].append(f"{name} 末尾缺「本条目由…核对…」署名")
+        if "编者" not in text or "核对" not in text:
+            problems["schema"].append(f"{name} 末尾缺「编者…核对…」编者行")
         mt = RE_RISK_TAG.search(text)
         if not mt:
             problems["schema"].append(
@@ -372,9 +372,9 @@ def check_staleness(files):
     today = date.today()
     for name in files:
         text = read(os.path.join(BOOK, name))
-        m = re.search(r"最后核实日期\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})", text)
+        m = re.search(r"最后更新\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})", text)
         if not m:
-            problems["staleness"].append(f"{name} 读不出最后核实日期")
+            problems["staleness"].append(f"{name} 读不出最后更新日期")
             continue
         d = datetime.strptime(m.group(1), "%Y-%m-%d").date()
         age = (today - d).days
@@ -458,7 +458,7 @@ def check_chapters(files):
 
 
 # ---------------------------------------------------------------- release
-RE_REVIEWED = re.compile(r"最后核实日期\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})")
+RE_REVIEWED = re.compile(r"最后更新\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})")
 
 
 def release_list(files):
@@ -467,7 +467,7 @@ def release_list(files):
     放行前置（四条，缺一不放）：
       1. 该书条目在 book/ 里已有正文；
       2. 证据等级 A 或 B；
-      3. 有最后核实日期，且未过 90 天红线；
+      3. 有本条最后更新日期，且未过 90 天红线；
       4. 工程质检该条自身无问题（12 字段齐全 / 风险导向注释在 / 无承诺词 / HK 编号与对照表一致）。
 
     输出按「风险等级优先、同风险按决策阶段」排序（判例 16）。
@@ -509,7 +509,7 @@ def release_list(files):
         if level not in ("A", "B"):
             why.append(f"证据等级 {level}（需 A/B）")
         if days is None:
-            why.append("缺最后核实日期")
+            why.append("缺最后更新日期")
         elif days > STALE_DAYS or days < 0:
             why.append(f"核实日期异常（{days} 天）")
         for label, pattern in REQUIRED_FIELDS:
@@ -543,11 +543,11 @@ def render_release(rows):
         "# 放行候选（自动生成，请勿手改）",
         "",
         f"> 由 `tools/check.py --release` 于 {date.today()} 生成。",
-        "> **放行前置四条**：条目已入 `book/` ｜ 证据等级 A/B ｜ 有最后核实日期且未过 90 天 ｜ 工程质检无问题。",
+        "> **放行前置四条**：条目已入 `book/` ｜ 证据等级 A/B ｜ 有本条最后更新日期且未过 90 天 ｜ 工程质检无问题。",
         "> **排序规则**（判例 16）：风险等级优先（高→中→低），同风险按决策阶段（要不要去→怎么申请→怎么选→怎么落地）。",
         "> **放行单怎么出**：从下表的「可放行」行里挑，填最后一列「本轮指定钩子角度」，作为信件回复即可。**每批 3 条**。",
         "",
-        "| 风险 | 阶段 | HK 编号 | 文件号 | 主题 | 读者章 | 证据等级 | 最后核实 | 误传素材 | 判定 | 本轮指定钩子角度 |",
+        "| 风险 | 阶段 | HK 编号 | 文件号 | 主题 | 读者章 | 证据等级 | 最后更新 | 误传素材 | 判定 | 本轮指定钩子角度 |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for r in rows:
@@ -567,7 +567,7 @@ def render_release(rows):
 
 # ---------------------------------------------------------------- run
 TITLES = {
-    "schema": "Schema 完整性（12 字段 / 编号方案 A / 风险导向注释 / 署名 / 等级与信源匹配）",
+    "schema": "Schema 完整性（12 字段 / 编号方案 A / 风险导向注释 / 编者行 / 等级与信源匹配）",
     "refs": "引用守恒（交叉引用 + HK 编号与对照表一致 + 核实记录一一对应）",
     "links": "链接巡检（官方链接是否还活着）",
     "promise": "承诺性表述扫描（保录取 / 百分百 / 稳过）",

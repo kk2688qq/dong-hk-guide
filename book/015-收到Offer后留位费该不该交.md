@@ -73,17 +73,15 @@
    <https://www.res.cuhk.edu.hk/tc/general-information/tuition-and-other-fees>
 3. 各院校招生处官方页（金额、期限、退费与转移政策逐校不同，须看**当年该专业**的官方通知）：港大 <https://admissions.hku.hk/>｜中大 <https://admission.cuhk.edu.hk/>｜科大 <https://join.hkust.edu.hk/>｜理大 <https://www.polyu.edu.hk/study/>｜城大 <https://www.cityu.edu.hk/admo/>｜浸大 <https://admissions.hkbu.edu.hk/>
 
-**最后核实日期 + 核实人**
+**本条最后更新**
 
-最后核实日期：2026-10-05（引用中官方 2027 招生页现行原文；其余院校金额与政策以各校当年官方页为准）
+最后更新：2026-10-05（引用中官方 2027 招生页现行原文；其余院校金额与政策以各校当年官方页为准）
 
-核实人：董老师复核
-
-**待核实**
+**官方尚未公布／未写死的事项**
 
 - **各校留位费的具体金额、期限与退费／转移政策**：逐校、逐专业、逐年不同，**本条刻意不逐一写死**——写死必然过期。请以目标院校当年官方通知为唯一依据。
 - **「composition fee 首期」与「留位费」在不同院校的措辞差异**：部分院校称 deposit／caution money／composition fee 首期，含义与可退性需按该校定义逐条确认。
 
 ---
 
-本条目由 WB2 于 2026-10-05 核对香港中文大学本科招生处与教务处官方页原文整理。**核实人：董老师复核。**
+编者核对香港中文大学本科招生处与教务处官方页原文整理

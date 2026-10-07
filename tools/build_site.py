@@ -51,7 +51,15 @@ from catalog import (  # noqa: E402
     GROUPS,
     group_of,
     load_catalog,
+    version_info,
 )
+
+# 版本号：**单一来源是 meta/about.md**（与 readme_sync.py 同源，026 C-2 / 判例 15）。
+VERSION, VERSION_DATE = version_info()
+VERSION_LINE = f"版本 {VERSION} · {VERSION_DATE}" if VERSION else ""
+
+# 对外联系方式（全库统一，判例 24 同期口径；改这里前先改 README / meta/about.md 并同步）
+CONTACT = "微信 jack787300、dxw22465 ｜ 邮箱 kk2688@agent.qq.com"
 
 # ---------------------------------------------------------------- 解析
 
@@ -60,7 +68,7 @@ RE_RISK_TAG = re.compile(r"<!--\s*风险\s*=\s*(\S+)\s+阶段\s*=\s*(\S+)\s+焦�
 RE_GRADE = re.compile(r"证据等级\*{0,2}\s*[:：]\s*\*{0,2}\s*([ABC])")
 RE_LEDE = re.compile(r"\*\*说人话\*\*\s*\n+(.+?)(?=\n\s*\n)", re.S)
 RE_WHO = re.compile(r"\*\*谁该看\*\*\s*[:：]?\s*(.+?)(?=\n|$)")
-RE_LASTCHECK = re.compile(r"最后核实日期\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
+RE_LASTCHECK = re.compile(r"最后更新\s*[:：]\s*(\d{4}-\d{2}-\d{2})")
 
 
 def read(path: str) -> str:
@@ -242,6 +250,7 @@ def page(title: str, body: str, desc: str = "", canonical: str = "") -> str:
 {body}
 <footer>
 <p>{html.escape(BOOK_TITLE)} · 免费 · 可查证 · 可转发</p>
+<p>{VERSION_LINE}　·　{CONTACT}</p>
 <p>每条正文末尾都附<b>官方原文链接</b>，可自行核对。核实记录公开在仓库
 <a href="https://github.com/kk2688qq/dong-hk-guide/tree/main/docs/核实记录">docs/核实记录/</a>。</p>
 <p>本指南只写查得到官方原文的内容，<b>不构成法律、移民或教育建议</b>；个案请向学校、入境处或专业人士确认。</p>

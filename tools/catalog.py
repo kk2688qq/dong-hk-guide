@@ -28,6 +28,25 @@ BOOK = os.path.join(ROOT, "book")
 META = os.path.join(ROOT, "meta")
 DOCS = os.path.join(ROOT, "docs")
 CATALOG = os.path.join(DOCS, "HK编号对照表.md")
+ABOUT = os.path.join(META, "about.md")
+
+RE_ABOUT_VERSION = re.compile(r"版本\s*\*{0,2}(v[\d.]+)\*{0,2}\s*·\s*(\d{4}-\d{2}-\d{2})")
+
+
+def version_info() -> "tuple[str, str]":
+    """版本号 + 版本日期——**单一来源**是 `meta/about.md` 的「版本 vX.Y · YYYY-MM-DD」。
+
+    为什么放这里：026 C-2 要求 README 顶部、`meta/about.md`、站点页脚三处都加版本号。
+    三处各写一份就一定会漂（026 之前「48 小时」在三处出现、改漏两处即为例）。
+    于是 `readme_sync.py`（README 状态行）与 `build_site.py`（站点页脚）都读本函数，
+    `meta/about.md` 自己是真源（判例 15：同一事实只许一处实现）。
+
+    读不到时返回 `("", "")`——**不静默编一个版本号**，让调用方自己决定显示与否。
+    """
+    if not os.path.isfile(ABOUT):
+        return "", ""
+    m = RE_ABOUT_VERSION.search(read(ABOUT))
+    return (m.group(1), m.group(2)) if m else ("", "")
 
 # ---------------------------------------------------------------- 读者章
 # 章节名必须与对照表「读者章」列的取值**逐字一致**（check.py 校验）。
