@@ -30,6 +30,11 @@ h1.title {
   border: 0;
   padding: 0;
 }
+/* 扉页（书名单独一页）：打印时书名落在上三分之一处，像一本书的扉页。
+   屏幕阅读不受影响（只在 @media print 生效）。 */
+@media print {
+  h1.title { margin-top: 28%; }
+}
 p.subtitle { text-align: center; color: #6b7686; margin: 0 0 1.6em; }
 
 nav#TOC {
@@ -172,7 +177,7 @@ li { margin: .3em 0; }
   h1 { margin-top: 1.6em; page-break-after: avoid; }
   h2, h3 { page-break-after: avoid; }
   table, blockquote { page-break-inside: avoid; }
-  /* 显式分页符：正文里 <div style="page-break-after: always;"></div>（WB4-026 C-4）。
+  /* 显式分页符：正文里 <div style="page-break-after: always;"></div>（2026-10-07 定稿 C-4）。
      weasyprint 会直接吃内联样式；这条是兜底——万一内联样式被 reset 或被
      markdown 处理器改写，块级 div 仍按「其后另起一页」处理。
      EPUB / 单文件 HTML 里它是个空 div，无副作用。 */

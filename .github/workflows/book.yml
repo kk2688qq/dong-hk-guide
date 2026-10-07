@@ -6,7 +6,7 @@ on:
     # tools/** 必须在白名单里：site/index.html（读者视图）与 Release 单文件
     # 都由 tools/build_reader.py 现场生成——只改生成器不改正文时，同样要重新构建。
     # 此前漏了它，2026-10-07 改版式时发现：推了生成器 CI 却不跑，站点不更新。
-    paths: ["book/**", "meta/**", "docs/**", "tools/**", "README.md", ".github/workflows/book.yml"]
+    paths: ["book/**", "meta/**", "docs/**", "tools/**", "release/**", "README.md", ".github/workflows/book.yml"]
   workflow_dispatch:
   # 手动触发：python tools/check.py --only links --network（链接巡检需要网络）
 
@@ -27,12 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install toolchain (pandoc + CJK fonts + weasyprint)
+      - name: Install toolchain (CJK fonts + weasyprint + pypandoc)
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc fonts-noto-cjk
-          pip3 install weasyprint markdown
-          pandoc --version | head -1
+          sudo apt-get install -y fonts-noto-cjk
+          pip3 install weasyprint markdown pypandoc-binary
 
       - name: Quality check (reports only, never blocks the build)
         # 刻意不挡发布：门禁只管新增内容的质量，不管已发布内容的可用性。
@@ -57,142 +56,27 @@ jobs:
             echo "README / llms.txt 已同步，无需回填"
           fi
 
-      - name: Stamp document header (版本号 + 引用格式) (017 阶段 2)
-        # 产物（HTML/PDF/EPUB）页首插「文档信息 + 建议引用格式 + 版本号」——
-        # 让 AI / 读者拿到文件即知版本与出处，属「AI 可读层」的零成本部分。
+      - name: "Guard: book/ 与定稿一致性（sync_from_draft --check，只报不挡）"
+        # 2026-10-08 董老师定：发布件一律以定稿为准（release/定稿-董老师香港留学指南.md）。
+        # book/ 若与定稿漂移，只警告不拦构建——门禁不挡既有内容的可用性。
+        run: |
+          python3 tools/sync_from_draft.py --check \
+            || echo "::warning::book/ 与定稿不一致——产物仍按定稿出，请尽快 sync_from_draft.py --write 对齐"
+
+      - name: Build release files（定稿直出：HTML + EPUB + 打印版 print.html）
+        # 定稿本身是完整成书稿（封面/五部分/49 条/93 处分页符），不再重新拼装。
+        # 结构性差异（此前 CI 拼的 head.md + 按「读者章」重排）已废弃。
         run: |
           set -euo pipefail
           mkdir -p dist
-          VERSION="$(date -u +%Y-%m-%d)"
-          N="$(ls book/*.md | wc -l | tr -d ' ')"
-          SHA="$(git rev-parse --short HEAD)"
-          {
-            echo "# 董老师香港留学指南"
-            echo ""
-            echo "> **文档信息**：版本 ${VERSION}（构建 ${SHA}）· 共 ${N} 条 · 许可 CC BY-NC-SA 4.0 · 开源仓库 https://github.com/kk2688qq/dong-hk-guide"
-            echo ">"
-            echo "> **建议引用格式**：董老师. 《董老师香港留学指南》. ${VERSION}. https://github.com/kk2688qq/dong-hk-guide"
-            echo ">"
-            echo "> 本文档每一条都可点开条目末尾的**官方原文链接**自行核对；核实记录公开在仓库 \`docs/核实记录/\`。"
-            echo ""
-            echo "---"
-            echo ""
-          } > dist/head.md
-          cat dist/head.md
-
-      - name: Merge chapters by 读者章 (tools/merge_order.py)
-        # 产物顺序 = 阅读器顺序 = 「读者章」（2026-10-07 董老师定：按读者的角色分章）。
-        # 此前按文件号拼，PDF/EPUB 的顺序与在线版不一致，按角色来找的人会迷路。
-        # 归章读 docs/HK编号对照表.md 的「读者章」列，章序与副标题读 build_site.GROUPS
-        # ——单一来源，脚本不另存分类表。
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-          : > dist/full.md
-          # 页首：文档信息 + 建议引用格式 + 版本号（017 阶段 2）
-          if [ -s dist/head.md ]; then
-            cat dist/head.md >> dist/full.md
-            echo "prepended: dist/head.md（文档信息页首）"
-          fi
-          # 前置章节（开篇 / 术语表 / 证据分级 / 使用方法 / 免责声明）——WB4-021 第 3 项。
-          # 目的是让产物从「一堆条目」变成「一本书」：读者先看到「这本书想回答的问题」。
-          # 文件在 meta/ 下、**不在 book/ 中**，因此不参与条目 schema 质检。
-          for f in $(ls meta/front-*.md 2>/dev/null | LC_ALL=C sort); do
-            printf '\n\n<!-- ===== %s ===== -->\n\n' "$f" >> dist/full.md
-            cat "$f" >> dist/full.md
-            echo "prepended: $f（前置章节）"
-          done
-          # 正文：按「读者章」分组，章首插章节标题，章内按 HK 编号升序
-          count=0
-          while IFS=$'\t' read -r kind val extra; do
-            [ -n "${kind:-}" ] || continue
-            case "$kind" in
-              CHAPTER)
-                printf '\n\n<!-- ===== %s ===== -->\n\n# %s\n\n> %s\n\n---\n\n' \
-                  "$val" "$val" "$extra" >> dist/full.md
-                echo "chapter: $val"
-                ;;
-              FILE)
-                if [ ! -s "$val" ]; then
-                  echo "::error::合并清单里的文件不存在或为空：$val"; exit 1
-                fi
-                printf '\n\n<!-- ===== %s ===== -->\n\n' "$val" >> dist/full.md
-                cat "$val" >> dist/full.md
-                count=$((count + 1))
-                ;;
-            esac
-          done < <(python3 tools/merge_order.py --with-chapters)
-          # 页脚（作者 + 联系方式 + 免责 + 版权）并入正文，
-          # 确保单独下载 PDF/HTML/EPUB 的读者也能找到作者与联系方式。
-          # 该文件不在 book/ 下，因此不参与条目 schema 质检。
-          if [ -s meta/about.md ]; then
-            printf '\n\n<!-- ===== meta/about.md ===== -->\n\n' >> dist/full.md
-            cat meta/about.md >> dist/full.md
-            echo "appended: meta/about.md（页脚）"
-          else
-            echo "::warning::meta/about.md 缺失，产物将不含作者与联系方式"
-          fi
-          # 附录：公开纠错台账（017 阶段 3）——让 AI 与读者在**单文件产物**里
-          # 也能读到「这份内容被质疑过、核查过、修正过」。放在页脚之后。
-          # 该文件不在 book/ 下，因此不参与条目 schema 质检。
-          if [ -s docs/纠错台账.md ]; then
-            printf '\n\n<!-- ===== docs/纠错台账.md ===== -->\n\n' >> dist/full.md
-            cat docs/纠错台账.md >> dist/full.md
-            echo "appended: docs/纠错台账.md（附录·纠错台账）"
-          else
-            echo "::warning::docs/纠错台账.md 缺失，产物将不含纠错台账"
-          fi
-          echo "merged: $count chapters"
-          if [ "$count" -eq 0 ]; then
-            echo "::error::book/ 目录里没有任何条目，构建终止"
-            exit 1
-          fi
-
-      - name: Write stylesheet（用仓库内的 assets/book-style.html，可本地验证）
-        run: |
-          cp assets/book-style.html dist/style.html
-          echo "stylesheet: $(wc -c < dist/style.html) 字节（来自 assets/book-style.html）"
-
-      - name: Build single-file HTML（读者视图，自包含可离线）
-        # 对照《高性价比人生指南》的产物形态：可下载的 HTML 不是「一本线性书」，
-        # 而是**一个能搜、能筛、能折叠的阅读器**——双击就开、断网可用、可直接转发。
-        # 卡片是服务端渲染的静态 HTML（不依赖 JS 也能读全文），AI 与搜索引擎都能抓。
-        run: |
-          set -euo pipefail
-          VERSION="$(date -u +%Y-%m-%d)"
-          SHA="$(git rev-parse --short HEAD)"
-          python3 tools/build_reader.py \
-            --out dist --name HKStudyGuide.html \
-            --offline --stamp "${VERSION}（构建 ${SHA}）"
+          python3 tools/build_release.py --out dist --html --epub
           test -s dist/HKStudyGuide.html
-
-      - name: Build print HTML（PDF 专用，pandoc 线性排版）
-        # 阅读器是交互界面，不适合直接喂 weasyprint；PDF 走单独的线性打印版，
-        # 样式仍是 assets/book-style.html（与阅读器同源的中文排版规则）。
-        run: |
-          set -euo pipefail
-          pandoc dist/full.md \
-            --standalone --toc --toc-depth=2 \
-            --metadata title="董老师香港升学手册" \
-            --metadata lang="zh-Hans" \
-            --include-in-header=dist/style.html \
-            -o dist/print.html
+          test -s dist/HKStudyGuide.epub
           test -s dist/print.html
 
-      - name: Build EPUB
+      - name: Build PDF (weasyprint，与 HTML 同一 print.html 源)
         run: |
-          pandoc dist/full.md \
-            --toc --toc-depth=2 \
-            --metadata title="董老师香港升学手册" \
-            --metadata lang="zh-Hans" \
-            -o dist/HKStudyGuide.epub
-
-      - name: Build PDF (weasyprint)
-        run: |
-          # weasyprint 读 PDF 专用的线性打印版 dist/print.html
-          python3 -m weasyprint \
-            -s dist/style.html \
-            dist/print.html dist/HKStudyGuide.pdf \
+          python3 -m weasyprint dist/print.html dist/HKStudyGuide.pdf \
             || echo "::warning::PDF 构建失败，HTML/EPUB 不受影响"
 
       - name: Verify outputs exist and are non-trivial

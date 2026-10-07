@@ -39,12 +39,15 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOOK = os.path.join(ROOT, "book")
-# 通道里的权威镜像（WB2 侧）
-DEFAULT_DRAFT = os.path.join(
+# 默认定稿：优先仓库内的收编副本（CI 可用；2026-10-08 起发布件也以它为源），
+# 没有再退回通道里的权威镜像（WB2 侧本机）。
+_REPO_DRAFT = os.path.join(ROOT, "release", "定稿-董老师香港留学指南.md")
+_HANDOFF_DRAFT = os.path.join(
     os.path.expanduser("~"),
     "WorkBuddy", "2026-09-19-08-45-55", "私密空间", "handoff", "WB4-to-WB2",
     "董老师香港留学指南-v1.0（49条全文）.md",
 )
+DEFAULT_DRAFT = _REPO_DRAFT if os.path.isfile(_REPO_DRAFT) else _HANDOFF_DRAFT
 
 # 定稿侧的结构行
 RE_ENTRY = re.compile(r"^#{1,6}\s+(HK-\d{3})\s+(.+?)\s*$")
