@@ -243,6 +243,11 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      # 可选的兜底令牌：若仓库管理员在 Secrets 里放了含 Pages 写权限的 PAT，
+      # 本工作流会自动用它**创建** Pages 站点（GITHUB_TOKEN 无此权限，见下）。
+      # secrets 上下文在 step 的 if 里不可用，故经 job 级 env 传递。
+      GH_PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -272,37 +277,64 @@ jobs:
           test -s site/llms.txt
           test -s site/robots.txt
 
-      - name: 开启 Pages（首次；GITHUB_TOKEN 可能无创建权限 → 不阻断）
-        # GitHub 对「用工作流令牌创建 Pages 站点」有限制：GITHUB_TOKEN 可以**更新**已有
-        # Pages 站点，但在不少仓库上**无权创建**（Resource not accessible by integration）。
-        # 因此这里先自查一次、尝试创建一次，失败只 **notice/warning**、不阻断部署链；
-        # 若确实创建不了，只需仓库管理员在 Settings → Pages 把 Source 设为
-        # 「GitHub Actions」一次，此后本工作流每次 push 全自动部署。
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -uxo pipefail
-          echo "--- 1) 查询 Pages 现状 ---"
-          gh api "/repos/${{ github.repository }}/pages" 2>&1 | head -20 \
-            || echo "::notice::Pages 尚未开启（404）"
-          echo "--- 2) 尝试创建 Pages 站点（build_type=workflow） ---"
-          if gh api --method POST "/repos/${{ github.repository }}/pages" -f build_type=workflow 2>&1 | head -30; then
-            echo "::notice::Pages 站点已创建/更新（build_type=workflow）"
-          else
-            echo "::warning::工作流令牌无权创建 Pages 站点。请在仓库 Settings → Pages 把 Source 选为「GitHub Actions」（只需一次，之后每次 push 全自动）。"
-          fi
-          echo "--- 3) 复核 ---"
-          gh api "/repos/${{ github.repository }}/pages" 2>&1 | head -20 || true
-
-      - name: Configure Pages
+      - name: Configure Pages（① 默认令牌）
+        # ⚠️ 结论（2026-10-07 实测 + 查证）：**创建 Pages 站点是仓库管理操作，
+        # Actions 的 GITHUB_TOKEN 按设计永远无权执行**——actions/configure-pages 的
+        # enablement 输入官方说明即「requires a token **other than GITHUB_TOKEN**」。
+        # 因此 `enablement: true` 在只用默认令牌时必失败（Resource not accessible by
+        # integration），本轮两次 CI 都卡在这一步。
+        # 这一步**不带 enablement**：站点已开启时它读一下即通过；未开启时会 404 失败，
+        # 由下面的兜底与警示步骤接住，**不让它变成长期红叉、也不挡单文件发布**。
+        id: cfg
         uses: actions/configure-pages@v5
+        continue-on-error: true
+
+      - name: Configure Pages（② 兜底：GH_PAGES_TOKEN，若已配置则自动创建站点）
+        id: cfg_pat
+        if: steps.cfg.outcome != 'success' && env.GH_PAGES_TOKEN != ''
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+          token: ${{ env.GH_PAGES_TOKEN }}
 
       - name: Upload Pages artifact
+        if: steps.cfg.outcome == 'success' || steps.cfg_pat.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
       - name: Deploy to GitHub Pages
         id: deploy
+        if: steps.cfg.outcome == 'success' || steps.cfg_pat.outcome == 'success'
         uses: actions/deploy-pages@v4
+
+      - name: 未开启 Pages → 出一份可执行的 Summary 与警示（不失败）
+        if: steps.cfg.outcome != 'success' && steps.cfg_pat.outcome != 'success'
+        run: |
+          set -euo pipefail
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
+          ## ⚠️ 站点未部署：GitHub Pages 尚未开启
+
+          **一次性动作（约 30 秒，需仓库管理员）**
+
+          > **Settings → Pages → Build and deployment → Source 选「GitHub Actions」→ Save**
+
+          做完这一次，本工作流**每次 push 都会自动构建并部署**，不需要再碰任何设置。
+          站点地址：`https://<owner>.github.io/<repo>/`（本项目为
+          `https://kk2688qq.github.io/dong-hk-guide/`）。
+
+          **为什么 CI 自己开不了**：创建 Pages 站点属于**仓库管理操作**，
+          Actions 自动颁发的 `GITHUB_TOKEN` **按设计永远没有这个权限**——
+          `actions/configure-pages` 的 `enablement` 输入官方说明即
+          「requires a token **other than `GITHUB_TOKEN`** to be provided」。
+          所以本轮两次 CI 都卡在这一步，加任何 `permissions:` 都无效。
+
+          **不想用界面？** 也可在仓库加一个含 Pages 写权限的 PAT 存为 secret
+          `GH_PAGES_TOKEN`，本工作流的兜底步骤会自动用它创建站点。
+
+          ---
+          **本次已完成的部分**：站点已构建成功（见上一步产物），
+          `llms.txt` / `llms-full.txt` / `robots.txt` / `sitemap.xml` 均已生成，
+          **只等这一次开启**。
+          MD
+          echo "::warning title=需一次性开启 GitHub Pages::Settings → Pages → Source 选「GitHub Actions」（约 30 秒），之后全自动。详见本次运行 Summary。"
