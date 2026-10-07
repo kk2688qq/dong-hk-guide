@@ -58,6 +58,13 @@ WHITELIST_DOMAINS = (
     # （2026-10-07 增补：HK-054 大湾区校区；逐域列举而非放开 .edu.cn，
     #   因为 .edu.cn 并非全部为高等学校，放全域会引入非一手来源）
     "cuhk.edu.cn", "hkust-gz.edu.cn", "moe.gov.cn", "crs.jsj.edu.cn",
+    # 全国联招（港澳台侨联考）官方一手发布方 —— 判据同判例 17：
+    # **省级教育考试院是「录取最低控制分数线」的官方一手发布方**（联招办与其同址：
+    # 广东省广州市天河区中山大道西 69 号广东省教育考试院大楼）；
+    # **gatzs.com.cn 是「内地（祖国大陆）高校面向港澳台招生信息网」**，联招办年度简章的
+    # 官方发布渠道。二者均为官方，非商业、非媒体。
+    # （2026-10-07 增补：HK-043 联考打假；逐域列举，不放开 .gov.cn／.com.cn 全域）
+    "eea.gd.gov.cn", "gatzs.com.cn",
 )
 # 内容分发渠道（可写进正文，不是依据来源）
 CHANNELS = ("zhihu.com", "xiaohongshu.com", "douyin.com", "mp.weixin.qq.com")
@@ -169,7 +176,12 @@ def check_schema(files):
             )
         else:
             rest = RE_TITLE_PREFIX.sub("", title).strip()
-            if re.search(r"\b\d{3}\b", rest):
+            # 只禁止「**本条自己的文件号**」进标题——这才是方案 A 的原意。
+            # 原实现用 \b\d{3}\b 会把标题里任何三位数字都判成文件号，**误伤合法搜索词**
+            # （2026-10-07 HK-043 题：「400 分上 985」中的 400 / 985 会被误报）。
+            # 按项目纪律「两个入口结论不一致时先怀疑脚本」收窄判定。
+            own = name[:3]
+            if re.search(rf"(?<!\d){re.escape(own)}(?!\d)", rest):
                 problems["schema"].append(
                     f"{name} 标题里出现了文件号（方案 A 要求文件号不进标题）：{title[:40]}"
                 )
