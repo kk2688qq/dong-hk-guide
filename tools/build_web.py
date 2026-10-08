@@ -38,7 +38,9 @@ RE_SRC_LASTMOD = re.compile(r"\*\*最后更新\*\*[：:]\s*(\d{4}-\d{2}-\d{2})")
 
 # ── 字段定义 ────────────────────────────────────────────────────
 FIELD_CLASS = {
+    # 2026-10-08 v1.1 书稿把「说人话」改名为「快速说明」——两个名字都认，避免源改名后漏样式
     "说人话": "f-lede",
+    "快速说明": "f-lede",
     "要花什么": "f-cost",
     "换回什么": "f-gain",
     "红线提醒": "f-red",
@@ -168,6 +170,10 @@ URL_FIXES = {
         "https://www.gov.hk/tc/residents/immigration/nonpermanent/applyextensionstay/students.htm",
     "https://www.immd.gov.hk/hkt/services/visas/dependant.html":
         "https://www.immd.gov.hk/hkt/services/visas/residence_as_dependant.html",
+    # 2026-10-08 v1.1 核查新发现：www.join.ust.hk 证书已过期（curl SEC_E_CERT_EXPIRED，
+    # 浏览器会弹安全警告）；官方同页在 join.hkust.edu.hk（200，页面自链接也指向它）。
+    "https://www.join.ust.hk/admissions/gaokao":
+        "https://join.hkust.edu.hk/admissions/gaokao",
 }
 
 def fix_urls(text):
@@ -283,6 +289,7 @@ def sidebar_html(active, chapters, pages_meta):
     out.append(a("index", "导读 · 这本书怎么用"))
     for p in pages_meta["parts"]:
         out.append(a(p["slug"], p["nav"]))
+    out.append('<a class="ni" href="single.html" download="%s">单文件版 · 下载离线用</a>' % SINGLE_DL)
     for ch in chapters:
         out.append('<details class="ngroup" open data-ch="%s">' % ch["num"])
         out.append('<summary>第 %s 章 · %s<span class="tw" aria-hidden="true"></span></summary>'
@@ -411,10 +418,20 @@ def entry_date(entry):
 
 
 def entry_desc(entry):
+    # v1.1 起字段名是「快速说明」，v1.0 及以前叫「说人话」——两个都认
     for f in entry["fields"]:
-        if f["name"] == "说人话":
+        if f["name"] in ("快速说明", "说人话"):
             return first_paragraph_text(clean_lines(f["lines"]))
     return SITE_DESC[:110]
+
+
+def foot_html():
+    """全站统一页脚（多页站与单文件版共用，同一事实只许一处实现）。"""
+    return ('<p class="pfoot">《董老师香港留学指南》%s · 最后更新 %s<br>'
+            '内容采用 CC BY-NC-SA 4.0（可转载、需署名、不得商用）<br>'
+            '数字以官方原文为准，引用前请回官方核对<br>'
+            '联系董老师：微信 jack787300 / dxw22465 · 邮箱 kk2688@agent.qq.com</p>'
+            % (VERSION, LASTMOD))
 
 
 # ── CSS / JS ───────────────────────────────────────────────────
@@ -975,6 +992,177 @@ def related_nav(entry, chapter):
     return ""
 
 
+# ── 单文件版（离线整本，随站点一起重建）─────────────────────────
+# 2026-10-09 董老师定：网站版式不动（暖纸手册多页站），另出一个同主题的
+# 单文件版挂在站点根（single.html）供用户下载离线用；每次构建自动重出，
+# 与网站永远同版本。文件不计入 sitemap、带 noindex（避免与条目页内耗排名）。
+SINGLE_DL = "董老师香港留学指南-单文件版.html"
+
+SINGLE_CSS = r"""
+/* ============ 单文件版（离线整本） ============ */
+.sidebar,.topbar,.backdrop,.skip{display:none!important}
+.main{margin-left:0; padding:20px 14px 60px}
+.sbar{
+  position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:12px;
+  background:var(--sb-bg); border-bottom:1px solid var(--sb-line); padding:10px 16px;
+}
+.sbar-t{font-weight:700; font-size:15.5px; color:var(--sb-ink); flex:1; line-height:1.4}
+.sbar-v{display:block; font-size:12px; font-weight:400; color:var(--sb-ink3)}
+.sbar-link{flex:none; font-size:13.5px; color:var(--sb-on-ink);
+  background:var(--sb-on-bg); border-radius:4px; padding:7px 12px}
+.sbar-link:hover{text-decoration:none; filter:brightness(1.05)}
+.toc{background:var(--surface-2); border:1px dashed var(--line-ui); border-radius:6px;
+  padding:14px 18px 12px; margin:0 0 28px}
+.toc-t{margin:0 0 8px; font-weight:700; font-size:15px; color:var(--ink)}
+.toc>a{display:block; padding:3px 0; font-size:14.5px; color:var(--ink2); line-height:1.5}
+.toc>a:hover{color:var(--brand-ink); text-decoration:none}
+.tgroup{margin:4px 0}
+.tgroup summary{cursor:pointer; font-weight:600; font-size:14px; color:var(--ink);
+  padding:4px 0; list-style:none}
+.tgroup summary::-webkit-details-marker{display:none}
+.tgroup summary::before{content:""; display:inline-block; width:8px; height:8px;
+  border-radius:2px; background:var(--brand); margin-right:8px}
+.tgroup a{display:block; padding:2px 0 2px 16px; font-size:13.5px; color:var(--ink2); line-height:1.55}
+.tgroup a:hover{color:var(--brand-ink)}
+.parttitle{font-size:20px; border-bottom:1px solid var(--line); padding-bottom:10px;
+  margin:44px 0 18px}
+.chap{margin:36px 0 4px}
+.chap h2{font-size:19px; margin:0 0 4px}
+.chap .blurb{color:var(--ink3); font-size:14px; margin:0 0 8px}
+.entry{margin:34px 0 0}
+.bk{font-size:12.5px; margin:16px 0 0}
+.bk a{color:var(--ink3)}
+@media print{
+  .sbar{position:static}
+  .toc,.bk{display:none}
+  .entry{page-break-before:always}
+}
+"""
+
+
+def single_html(head, doc, chapters, ids, base, theme_css):
+    """整本单文件：暖纸手册主题、自带目录、条目互链转为页内锚点、零 JS。"""
+    css = CSS + theme_css + SINGLE_CSS
+
+    # 导读（书名部分下的 secs；去掉与 hero 重复的行）
+    intro_secs = []
+    if head:
+        for s in head["secs"]:
+            body = clean_lines(s["lines"])
+            if not body:
+                continue
+            body = re.sub(r"^\*\*在线版（推荐）\*\*.*$", "", body, flags=re.M)
+            body = re.sub(r"^\*\*GitHub 仓库\*\*.*$", "", body, flags=re.M)
+            body = re.sub(r"^\*[^\n]*插班[^\n]*\*$", "", body, flags=re.M)
+            body = re.sub(r"^\*\*本文由董老师审核.*$", "", body, flags=re.M)
+            body = re.sub(r"^\*\*版本\*\*.*$", "", body, flags=re.M)
+            body = re.sub(r"^`版本 v1\.0`[^\n]*$", "", body, flags=re.M)
+            intro_secs.append("<section><h2>%s</h2>%s</section>"
+                              % (html.escape(s["title"]), link_refs(md2html(body), ids)))
+
+    # 前后附属部分（0=第一部分 1=第二部分 3=第四 4=第五；2=第三部分=条目本身）
+    part_anchor = {0: "sec-part1", 1: "sec-part2", 3: "sec-part4", 4: "sec-part5"}
+
+    def part_block(i):
+        if i >= len(doc["parts"]):
+            return ""
+        p = doc["parts"][i]
+        secs = []
+        for s in p["secs"]:
+            body = clean_lines(s["lines"])
+            if not body:
+                continue
+            secs.append("<section><h2>%s</h2>%s</section>"
+                        % (html.escape(s["title"]), link_refs(md2html(body), ids)))
+        if not secs:
+            return ""
+        return ('<section id="%s"><h2 class="parttitle">%s</h2>%s</section>'
+                % (part_anchor.get(i, "sec-%d" % i), html.escape(p["title"]),
+                   "\n".join(secs)))
+
+    # 章节 + 条目（含目录组）
+    chap_blocks, toc_groups = [], []
+    for ch in chapters:
+        items = []
+        for e in ch["entries"]:
+            slug = e["id"].lower()
+            items.append('<article class="entry" id="%s"><h1>%s %s</h1>%s%s'
+                         '<p class="bk"><a href="#toc">↑ 回目录</a></p></article>'
+                         % (slug, e["id"], html.escape(e["title"]),
+                            chips(e["meta"]), render_fields(e, ids)))
+        blurb = ('<p class="blurb">%s</p>' % link_refs(md2html(ch["blurb"]), ids)
+                 if ch["blurb"] else "")
+        chap_blocks.append('<section class="chap" id="ch-%s"><h2>第 %s 章 · %s</h2>%s</section>%s'
+                           % (ch["num"], ch["num"], html.escape(ch["title"]),
+                              blurb, "\n".join(items)))
+        links = "\n".join('<a href="#%s">%s %s</a>'
+                          % (e["id"].lower(), e["id"], html.escape(e["title"]))
+                          for e in ch["entries"])
+        toc_groups.append('<details class="tgroup" open><summary>第 %s 章 · %s</summary>%s</details>'
+                          % (ch["num"], html.escape(ch["title"]), links))
+
+    # 目录
+    toc = ['<nav class="toc" id="toc" aria-label="目录"><p class="toc-t">目录</p>']
+    if intro_secs:
+        toc.append('<a href="#sec-intro">导读 · 这本书怎么用</a>')
+    for i in (0, 1, 3, 4):
+        if i < len(doc["parts"]) and doc["parts"][i]["secs"]:
+            toc.append('<a href="%s">%s</a>'
+                       % (part_anchor[i], html.escape(doc["parts"][i]["title"])))
+    if len(doc["parts"]) > 2:
+        toc.append('<a href="#entries">%s（49 条）</a>'
+                   % html.escape(doc["parts"][2]["title"]))
+    toc.extend(toc_groups)
+    toc.append("</nav>")
+
+    entries_head = ('<h2 class="parttitle" id="entries">%s</h2>'
+                    % html.escape(doc["parts"][2]["title"])) if len(doc["parts"]) > 2 else ""
+
+    hero = """<div class="hero">
+<h1>%s</h1>
+<p class="tagline">中学插班 · 本科申请 · 本科申硕 · 身份规划 · 费用预算 · 防骗打假</p>
+<div class="vers"><span class="chip c-low">%s</span><span class="chip">49 条收录</span><span class="chip">离线单文件版</span></div>
+<p class="contact">本文件是整本书的单文件版：保存到手机或电脑即可离线阅读，双击就开，也方便直接转发。<br>
+在线版永远是最新版：<a href="%s">%s</a><br>
+本文由董老师审核。联系董老师：微信 jack787300 / dxw22465 · 邮箱 kk2688@agent.qq.com</p>
+</div>""" % (SITE_TITLE, VERSION, base, base)
+
+    main = ('<header class="sbar"><div class="sbar-t">%s'
+            '<span class="sbar-v">%s · 49 条 · 最后更新 %s · 离线单文件版</span></div>'
+            '<a class="sbar-link" href="%s">在线版（最新）</a></header>'
+            '<main class="main"><div class="wrap"><span id="sec-intro"></span>%s%s%s%s%s%s%s%s</div></main>'
+            % (SITE_TITLE, VERSION, LASTMOD, base,
+               hero, "\n".join(toc),
+               "\n".join(intro_secs),
+               part_block(0), part_block(1),
+               entries_head, "\n".join(chap_blocks),
+               part_block(3) + part_block(4) + foot_html()))
+
+    h = f"""<!DOCTYPE html>
+<html lang="{LANG}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{SITE_TITLE}（单文件离线版）</title>
+<meta name="description" content="{html.escape(SITE_DESC[:150])}">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FBF7F0">
+<style>
+{css}
+</style>
+</head>
+<body>
+{main}
+</body>
+</html>"""
+    # 条目互链 hk-XXX.html → 页内锚点；附属页链接 → 对应锚点
+    h = re.sub(r'href="hk-(\d{3})\.html"', r'href="#hk-\1"', h)
+    h = re.sub(r'href="part-([1245])\.html"',
+               lambda m: 'href="#sec-part%s"' % m.group(1), h)
+    h = re.sub(r'href="index\.html(#)?[^"]*"', r'href="#toc"', h)
+    return ext_links(h)
+
+
 def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
     global VERSION, LASTMOD
     theme_css = THEMES[theme]["css"] if theme in THEMES else ""
@@ -1034,11 +1222,7 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
     def sb(active):
         return sidebar_html(active, chapters, pages_meta)
 
-    foot = ('<p class="pfoot">《董老师香港留学指南》%s · 最后更新 %s<br>'
-            '内容采用 CC BY-NC-SA 4.0（可转载、需署名、不得商用）<br>'
-            '数字以官方原文为准，引用前请回官方核对<br>'
-            '联系董老师：微信 jack787300 / dxw22465 · 邮箱 kk2688@agent.qq.com</p>'
-            % (VERSION, LASTMOD))
+    foot = foot_html()
 
     # 1) 首页：导读 + 章节导航
     intro_secs = []
@@ -1065,9 +1249,10 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
 <span class="chip">A 级官方信源 84%%</span><span class="chip">每条可核回官方原文</span>
 </div>
 <p class="contact"><a href="https://kk2688qq.github.io/dong-hk-guide/">在线版（永远是最新版）</a><br>
+<a href="single.html" download="%s">下载单文件版（离线可用，随网站同步更新）</a><br>
 <a href="https://github.com/kk2688qq/dong-hk-guide">GitHub 仓库</a><br>
 本文由董老师审核。更多问题请联系微信：jack787300、dxw22465，邮箱：kk2688@agent.qq.com</p>
-</div>""" % VERSION
+</div>""" % (VERSION, SINGLE_DL)
     index_main = ('<div class="wrap">%s<div class="sect">%s</div>%s</div>'
                   % (hero, intro_html, foot))
     idx_ld = {
@@ -1148,6 +1333,11 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
             }
             write("%s.html" % slug, title, desc, slug, "%s.html" % slug,
                   sb(slug), "\n".join(article), ld)
+
+    # 3.5) 单文件版 single.html（暖纸手册样式整本，随站更新；不入 sitemap、noindex）
+    with io.open(os.path.join(out_dir, "single.html"), "w", encoding="utf-8") as f:
+        f.write(single_html(head, doc, chapters, ids, base, theme_css))
+    written.append("single.html")
 
     # 4) sitemap.xml
     urls = []
@@ -1238,7 +1428,7 @@ Sitemap: {0}sitemap.xml
             print("  旧 URL 别名（entry-HK-*.html → hk-*.html · front-*.html → index.html）：%d 个" % alias)
 
     print("生成 %d 个文件 → %s" % (len(written), out_dir))
-    print("  条目页：%d · 阅读页：4 · 首页：1 · sitemap/robots：2"
+    print("  条目页：%d · 阅读页：4 · 首页：1 · 单文件版：1 · sitemap/robots：2"
           % sum(1 for w in written if w.startswith("hk-")))
     return written
 
