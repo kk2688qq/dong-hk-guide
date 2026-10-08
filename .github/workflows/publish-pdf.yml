@@ -1,0 +1,77 @@
+name: publish-pdf
+
+# 把成品 PDF 发布到固定的下载位（Release: book-latest）。
+#
+# 为什么单独一个工作流、而不是并进 book.yml：
+#   1. book.yml 的 PDF 是**构建器现场生成**的（weasyprint 吃 print.html）。
+#      成品（A4 / 191 页 / 中文字体已嵌入）观感与页数都更好，是董老师确认要发出去的那一版。
+#   2. book.yml 同时负责站点与单文件 HTML 的发布，那两项另有负责人；
+#      本工作流的触发路径**刻意避开**它的白名单，只动 PDF 这一个下载位，互不牵连。
+#
+# 触发：把新的成品 PDF 覆盖到 download/董老师香港留学指南.pdf 后 push，即自动发布。
+# 也可在 Actions 页手动 Run workflow。
+#
+# 下载地址（永久不变，始终指向最新版）：
+#   https://github.com/kk2688qq/dong-hk-guide/releases/download/book-latest/董老师香港留学指南.pdf
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "download/**"
+      - ".github/workflows/publish-pdf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-pdf
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 校验来源文件（存在、非空、是 PDF）
+        run: |
+          set -euo pipefail
+          ls -lh download/
+          SRC="download/董老师香港留学指南.pdf"
+          test -s "$SRC" || { echo "::error::缺少成品 PDF：$SRC"; exit 1; }
+          head -c 5 "$SRC" | grep -q '%PDF-' || { echo "::error::$SRC 不是合法 PDF"; exit 1; }
+          echo "OK  $SRC  $(du -h "$SRC" | cut -f1)"
+
+      - name: 备好两个文件名（正式中文名 + README 现用英文名）
+        # 中文名是项目对外统一名；英文名 HKStudyGuide.pdf 仍被 README / llms.txt 引用，
+        # 两份内容完全相同，避免读者从旧链接下到过时版本。待上游链接全部切到中文名后，
+        # 可移除此处英文名并行发布。
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp "download/董老师香港留学指南.pdf" "dist/董老师香港留学指南.pdf"
+          cp "download/董老师香港留学指南.pdf" "dist/HKStudyGuide.pdf"
+          ls -lh dist/
+
+      - name: 发布到固定 Release（book-latest，同名覆盖）
+        # 用 gh 只替换资产，不触碰 Release 的说明文字与其它产物（HTML / EPUB / 台账）。
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload book-latest \
+            "dist/董老师香港留学指南.pdf" \
+            "dist/HKStudyGuide.pdf" \
+            --clobber
+
+      - name: 回执
+        run: |
+          {
+            echo "## PDF 已发布到 book-latest"
+            echo
+            echo "- 来源：\`download/董老师香港留学指南.pdf\`"
+            echo "- 大小：$(du -h "dist/董老师香港留学指南.pdf" | cut -f1)"
+            echo "- 下载：https://github.com/${{ github.repository }}/releases/download/book-latest/董老师香港留学指南.pdf"
+          } >> "$GITHUB_STEP_SUMMARY"
