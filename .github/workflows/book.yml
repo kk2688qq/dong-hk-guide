@@ -6,7 +6,10 @@ on:
     # tools/** 必须在白名单里：site/index.html（读者视图）与 Release 单文件
     # 都由 tools/build_reader.py 现场生成——只改生成器不改正文时，同样要重新构建。
     # 此前漏了它，2026-10-07 改版式时发现：推了生成器 CI 却不跑，站点不更新。
-    paths: ["book/**", "meta/**", "docs/**", "tools/**", "release/**", "README.md", ".github/workflows/book.yml"]
+    # assets/** 同样必须在：assets/book-style.html 是三个产物（HTML/EPUB/PDF）
+    # 的**唯一样式源**，且自 2026-10-08（判例 27）起**分页规则也住在那里**——
+    # 只改样式不改正文时，产物照样会变。
+    paths: ["book/**", "meta/**", "docs/**", "tools/**", "release/**", "assets/**", "README.md", ".github/workflows/book.yml"]
   workflow_dispatch:
   # 手动触发：python tools/check.py --only links --network（链接巡检需要网络）
 
