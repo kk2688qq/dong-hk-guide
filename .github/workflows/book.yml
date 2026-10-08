@@ -166,21 +166,40 @@ jobs:
       - name: Install site deps
         run: pip3 install markdown
 
-      - name: Build site (tools/build_site.py)
+      - name: Build site（读者主站 = 多页站 · B 暖纸手册 + AI 可读层）
         env:
           SITE_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
           SITE_BOOK_HTML: dist/HKStudyGuide.html
         run: |
-          python3 tools/build_site.py
-          # 首页换成「读者视图」（与 Release 里那份可下载 HTML 同一个阅读器）：
-          # 卡片 + 说人话为主角 + 折叠明细 + 筛选；条目页 entry-HK-*.html 保留，
-          # 深链不失效。build_site 出的旧 index.html 被这一步覆盖。
-          python3 tools/build_reader.py --out site --name index.html
+          set -euo pipefail
+          # ① 项目既有生成器：产 AI 可读层（llms.txt / llms-full.txt / robots.txt）
+          #    与 md/*.md 纯文本、book.html（单文件全书）。
+          #    它的 HTML 入口（index/entry-*/front-*）不再入站——由 ② 的多页站全面接管，
+          #    避免同一内容两套 URL 分散搜索引擎收录权重。
+          python3 tools/build_site.py --out site-ai
+          # ② 读者主站：按定稿（release/定稿-董老师香港留学指南.md）直出多页站——
+          #    首页 + 4 阅读页 + 49 个 hk-XXX.html 条目页 + sitemap.xml + robots.txt。
+          #    主题 B「暖纸手册」（2026-10-08 董老师拍板；生成器 tools/build_web.py）。
+          #    --ai-dir 并入 AI 可读层（robots.txt 单一来源仍是仓库根），并把旧
+          #    entry-HK-*.html / front-*.html 生成 noindex 别名页——改版前深链不失效。
+          #    生成器自带 URL_FIXES 死链兜底映射（gov.hk 延期页 / immd 受养人页官方新址）。
+          python3 tools/build_web.py \
+            --md "release/定稿-董老师香港留学指南.md" \
+            --out site --theme B --ai-dir site-ai
+          # ③ 旧「读者视图」（卡片+全文搜索+筛选）保留在 /reader.html，
+          #    单页不再占首页；微信发文件那条线（Release 单文件）不受影响。
+          python3 tools/build_reader.py --out site --name reader.html
           echo "--- site 产物 ---"
-          ls -la site | head -20
+          ls site | wc -l
           test -s site/index.html
+          test -s site/hk-001.html
+          test -s site/part-1.html
           test -s site/llms.txt
+          test -s site/llms-full.txt
           test -s site/robots.txt
+          test -s site/sitemap.xml
+          test -s site/book.html
+          test -s site/reader.html
 
       - name: Configure Pages（① 默认令牌）
         # ⚠️ 结论（2026-10-07 实测 + 查证）：**创建 Pages 站点是仓库管理操作，
