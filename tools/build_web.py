@@ -151,7 +151,10 @@ def parse(md_path):
 
 # ── Markdown → HTML ────────────────────────────────────────────
 def md2html(text):
-    return autolink(markdown.markdown(fix_link_lines(fix_urls(text)), extensions=["tables"]))
+    h = autolink(markdown.markdown(fix_link_lines(fix_urls(text)), extensions=["tables"]))
+    # 表格包横向滚动壳：窄屏不撑破版面；列宽交还浏览器 auto 布局
+    h = h.replace("<table>", '<div class="tw"><table>').replace("</table>", "</table></div>")
+    return ext_links(h)
 
 
 # ── 链接处理 ───────────────────────────────────────────────────
@@ -232,6 +235,21 @@ def clean_lines(lines):
     return t
 
 
+RE_A_ABS = re.compile(r'<a href="(https?://[^"]*)"([^>]*)>')
+
+def ext_links(html_text):
+    """站外链接（http/https 绝对地址）一律新窗口打开；站内相对链接不动。
+    2026-10-08 董老师定：点击站外链接要新开窗口。"""
+    def rep(m):
+        attrs = m.group(2)
+        if "target=" not in attrs:
+            attrs += ' target="_blank"'
+        if "noopener" not in attrs:
+            attrs += ' rel="noopener"'
+        return '<a href="%s"%s>' % (m.group(1), attrs)
+    return RE_A_ABS.sub(rep, html_text)
+
+
 def first_paragraph_text(md_text, limit=120):
     t = re.sub(r"\*\*([^*]*)\*\*", r"\1", md_text)
     t = re.sub(r"[#>`\[\]]", "", t)
@@ -287,6 +305,7 @@ def sidebar_html(active, chapters, pages_meta):
 def page_shell(title, desc, slug, canonical_path, sidebar, main_html,
                jsonld, base=BASE, theme_css="", main_attr=""):
     css = CSS + theme_css
+    main_html = ext_links(main_html)  # 站外链接统一新窗口（含页脚在线版/GitHub 等）
     js = JS
     jsonld_s = json.dumps(jsonld, ensure_ascii=False) if jsonld else ""
     ld = ('<script type="application/ld+json">%s</script>' % jsonld_s) if jsonld else ""
@@ -505,11 +524,14 @@ article code{
   font-size:.92em; background:var(--code); padding:2px 6px; border-radius:5px;
   font-family:ui-monospace,Consolas,monospace;
 }
+.tw{overflow-x:auto; margin:0 0 16px; -webkit-overflow-scrolling:touch}
 article table{
-  border-collapse:collapse; width:100%; margin:0 0 16px; font-size:14.5px;
+  border-collapse:collapse; width:100%; margin:0; font-size:14.5px;
   background:var(--surface);
 }
 article th,article td{border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top}
+/* 表格里的链接（HK-XXX 引用等）不许断行——防止「见」列被挤成 HK-/009 两行 */
+article th a,article td a{white-space:nowrap}
 article th{background:var(--surface-2); font-weight:600}
 article blockquote{
   margin:0 0 14px; padding:10px 14px; border-left:3px solid var(--line-ui);
@@ -944,28 +966,13 @@ JS = r"""
 
 # ── 组装页面 ───────────────────────────────────────────────────
 def pn_nav(entry, flat):
-    i = flat.index(entry)
-    prev = flat[i - 1] if i > 0 else None
-    nxt = flat[i + 1] if i < len(flat) - 1 else None
-    out = ['<nav class="pn">']
-    if prev:
-        out.append('<a class="prev" href="%s.html"><span class="dir">上一篇</span>%s</a>'
-                   % (prev["id"].lower(), html.escape(prev["title"])))
-    if nxt:
-        out.append('<a class="next" href="%s.html"><span class="dir">下一篇</span>%s</a>'
-                   % (nxt["id"].lower(), html.escape(nxt["title"])))
-    out.append("</nav>")
-    return "\n".join(out)
+    """（2026-10-08 已停用：董老师要求去掉上一篇/下一篇）保留空实现防外部调用报错。"""
+    return ""
 
 
 def related_nav(entry, chapter):
-    others = [e for e in chapter["entries"] if e is not entry]
-    if not others:
-        return ""
-    links = "\n".join('<a href="%s.html">%s</a>' % (e["id"].lower(), html.escape(e["title"]))
-                      for e in others)
-    return ('<div class="related"><p>同章其他条目</p><div class="rl">%s</div></div>'
-            % links)
+    """（2026-10-08 已停用：董老师要求去掉同章其他条目）"""
+    return ""
 
 
 def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
@@ -1117,8 +1124,7 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
             article.append(chips(e["meta"]))
             article.append(render_fields(e, ids))
             article.append("</article>")
-            article.append(pn_nav(e, flat))
-            article.append(related_nav(e, ch))
+            # 2026-10-08 董老师定：去掉「上一篇/下一篇」与「同章其他条目」模块
             article.append(foot)
             article.append("</div>")
             title = "%s %s - %s" % (e["id"], e["title"], SITE_TITLE)
