@@ -32,6 +32,7 @@ import re
 import subprocess
 import sys
 import urllib.parse
+from html import escape as html_escape
 
 import markdown
 
@@ -84,7 +85,7 @@ def render_body(md_text: str):
     md = markdown.Markdown(
         extensions=["tables", "toc"],
         extension_configs={
-            "toc": {"slugify": _slugify_factory(), "toc_depth": "1-2"},
+            "toc": {"slugify": _slugify_factory(), "toc_depth": "1-3"},
         },
     )
     body = md.convert(md_text)
@@ -93,21 +94,55 @@ def render_body(md_text: str):
 
 def build_toc_html(tokens) -> str:
     """不带 <h2>目录</h2>——assets/book-style.html 里有 nav#TOC::before{content:"目录"}，
-    自己再写一个就会出现两个「目录」（实测踩过）。"""
-    parts = ['<nav id="TOC">', "<ul>"]
+    自己再写一个就会出现两个「目录」（实测踩过）。
 
-    def walk(items):
+    2026-10-08 董老师定「严格按定稿的内容和格式、不要重排」：目录只列**书的骨架**——
+    部分（H1）→ 章（H2，只认「第 N 章 ·」）→ 条目（H3，只认「HK-xxx」）。
+    条目内部的小节（如 HK-030 里的「一、材料清单总表」「阶段 A」）不进目录，
+    否则会和「第 N 章」并排、看起来像章（上一版就是这个毛病）。
+    """
+    flat = []
+
+    def collect(items):
         for t in items:
-            parts.append(f'<li><a href="#{t["id"]}">{t["name"]}</a>')
-            if t.get("children"):
-                parts.append("<ul>")
-                walk(t["children"])
-                parts.append("</ul>")
-            parts.append("</li>")
+            flat.append(t)
+            collect(t.get("children") or [])
 
-    walk(tokens)
+    collect(tokens)
+
+    parts = ['<nav id="TOC">', "<ul>"]
+    for t in flat:
+        lv, name = t["level"], t["name"]
+        if lv == 1:
+            if name.strip() == TITLE:      # 封面书名不进目录
+                continue
+            cls = "lv1"
+        elif lv == 2 and re.match(r"^第\s*\d+\s*章", name):
+            cls = "lv2"
+        elif lv == 3 and re.match(r"^HK-\d{3}", name):
+            cls = "lv3"
+        else:
+            continue
+        parts.append(f'<li class="{cls}"><a href="#{t["id"]}">{html_escape(name)}</a></li>')
     parts.append("</ul></nav>")
     return "\n".join(parts)
+
+
+def wrap_cover(body: str) -> str:
+    """把封面区（书名 → 联系方式，到第一条分割线为止）包进 div.cover。
+
+    这样样式层能精确控制「封面独占一页、内部任何标题都不再分页」——
+    否则 `h1,h2,h3{page-break-before:always}` 会把副题挤到第二页，
+    封面被拆成「书名一页 + 副题一页」（2026-10-08 实测踩过）。
+    """
+    m = re.search(r"<hr\s*/?>", body)
+    if not m:
+        print("  ! 未找到封面结束的分割线，跳过封面包裹")
+        return body
+    # hr 一并去掉：封面本身已是视觉分界，留着它会在「封面占满一页」时
+    # 掉到下一页、再被 h1 的强制分页顶成一张空白页（2026-10-08 实测踩过）。
+    return ('<div class="cover">\n' + body[:m.start()].rstrip() + "\n</div>\n\n"
+            + body[m.end():])
 
 
 def inject_toc(body: str, toc_html: str) -> str:
@@ -132,6 +167,7 @@ def inject_toc(body: str, toc_html: str) -> str:
 
 def build_html(draft: str, out_dir: str) -> str:
     body, toc = render_body(draft)
+    body = wrap_cover(body)
     body = inject_toc(body, toc)
     # 扉页标题挂 title 类（样式里 h1.title 居中大字；pandoc 会自动挂，
     # 我们自己转换就得手动挂，否则扉页是一行不起眼的小标题——实测踩过。
@@ -185,7 +221,7 @@ def build_epub(draft_path: str, out_dir: str) -> str:
         format="gfm",
         outputfile=dst,
         extra_args=[
-            "--toc", "--toc-depth=2",
+            "--toc", "--toc-depth=3",
             "--metadata", f"title={TITLE}",
             "--metadata", "lang=zh-Hans",
             "--metadata", "creator=董老师",
@@ -211,6 +247,20 @@ def verify(out_dir: str) -> None:
         if bad in html:
             problems.append(f"HTML 含内部术语「{bad}」")
 
+    # 目录：必须列到全部 49 条（董老师 2026-10-08：目录要能直接点到某一条）
+    mtoc = re.search(r'<nav id="TOC">(.*?)</nav>', html, flags=re.S)
+    if not mtoc:
+        problems.append("HTML 里没有目录（nav#TOC 缺失）")
+    else:
+        n_toc_items = len(re.findall(r">HK-\d{3}", mtoc.group(1)))
+        print(f"  · 目录：{n_toc_items} 条")
+        if n_toc_items != 49:
+            problems.append(f"目录里的条目数 {n_toc_items} ≠ 49（目录没列全）")
+
+    # 封面：整块必须在一个 div.cover 里（否则会被拆页）
+    if 'class="cover"' not in html:
+        problems.append("HTML 里没有封面块（div.cover）——封面可能被拆成两页")
+
     pdf_path = os.path.join(out_dir, "HKStudyGuide.pdf")
     if os.path.isfile(pdf_path):
         from pypdf import PdfReader
@@ -223,6 +273,8 @@ def verify(out_dir: str) -> None:
         print(f"  · PDF：{n} 页；首页抽样「{sample[:40]!r}」")
         if "留学指南" not in sample:
             problems.append("PDF 首页没抽到书名（可能字体/渲染异常）")
+        if "用最少的时间" not in sample:
+            problems.append("PDF 首页没抽到副题——封面被拆成了两页（h2 另起页）")
         if len(mid.strip()) < 50:
             problems.append("PDF 中间页文字过少（可能乱码或空白页）")
         whole = sample + mid + last

@@ -30,12 +30,19 @@ h1.title {
   border: 0;
   padding: 0;
 }
-/* 扉页（书名单独一页）：打印时书名落在上三分之一处，像一本书的扉页。
-   屏幕阅读不受影响（只在 @media print 生效）。 */
-@media print {
-  h1.title { margin-top: 28%; }
-}
 p.subtitle { text-align: center; color: #6b7686; margin: 0 0 1.6em; }
+
+/* 封面区（书名 → 联系方式，到第一条分割线为止）：整块居中。
+   打印时独占首页、**内部任何标题都不许再分页**——否则封面会被拆成
+   「书名一页 + 副题一页」（2026-10-08 实测踩过，两版 PDF 都中招）。 */
+.cover { text-align: center; }
+.cover h1, .cover h2 { page-break-before: avoid; break-before: auto; }
+.cover h1 { border: 0; padding: 0; margin: .3em 0 .1em; font-size: 2em; line-height: 1.4; }
+.cover h2 { border: 0; padding: 0; margin: 0 0 1em; font-size: 1.28em; color: #6b7686; font-weight: 600; }
+.cover p { text-align: center; }
+@media print {
+  .cover { page-break-after: always; break-after: page; margin-top: 20%; }
+}
 
 nav#TOC {
   background: #f7f9fc;
@@ -59,10 +66,13 @@ nav#TOC ul {
   columns: 2;
   column-gap: 42px;
 }
-nav#TOC ul ul { columns: auto; padding-left: 1.15em; }
-nav#TOC li { break-inside: avoid; margin: .12em 0; font-size: .905em; line-height: 1.65; }
-nav#TOC > ul > li { font-weight: 600; margin: .55em 0; font-size: .95em; }
-nav#TOC > ul > li > a { color: #12406e; }
+/* 目录三层：部分（lv1）/ 章（lv2）/ 条目（lv3）。2026-10-08 起目录列到 49 条，
+   结构由 tools/build_release.py 按标题级别过滤生成（条目内部的小节不列）。 */
+nav#TOC li { break-inside: avoid; margin: .1em 0; font-size: .9em; line-height: 1.6; }
+nav#TOC li.lv1 { font-weight: 700; margin: .85em 0 .25em; font-size: .97em; }
+nav#TOC li.lv1 > a { color: #12406e; }
+nav#TOC li.lv2 { font-weight: 600; margin: .4em 0 .1em; padding-left: .7em; }
+nav#TOC li.lv3 { padding-left: 1.7em; font-size: .86em; color: #5a6675; }
 nav#TOC a { color: #3d4854; text-decoration: none; }
 nav#TOC a:hover { color: #12406e; text-decoration: underline; }
 
@@ -83,6 +93,17 @@ h2 {
   border-bottom: 1px solid #e6eaf0;
 }
 h3 { font-size: 1.06em; margin: 1.5em 0 .45em; }
+/* 字段小标题：书稿里是 ####（说人话 / 要花什么 / 换回什么 …）。
+   2026-10-08 补：此前只写了「**字段**」加粗段落的规则，定稿改成四级标题后
+   这一栏没有任何样式，字段名和正文混在一起、看不出层次。 */
+h4 {
+  font-size: 1.02em;
+  margin: 1.6em 0 .35em;
+  color: #12406e;
+  border-left: 4px solid #c8a45c;
+  padding-left: .55em;
+  letter-spacing: .02em;
+}
 
 /* ---------- 字段小标题：「**说人话**」这类独立成段的加粗行 ---------- */
 p > strong:only-child {
@@ -183,7 +204,14 @@ li { margin: .3em 0; }
      只在打印 / PDF 生效，屏幕阅读与 EPUB 不受影响。 */
   nav#TOC { page-break-before: always; break-before: page; }
   h1, h2, h3 { page-break-before: always; break-before: page; }
-  h1:first-of-type { page-break-before: avoid; break-before: auto; }
+  /* 封面不受「标题另起一页」约束：书名与副题必须同页（封面整体由
+     .cover 的 page-break-after 收尾）。 */
+  .cover h1, .cover h2, h1:first-of-type { page-break-before: avoid; break-before: auto; }
+  h4 { page-break-after: avoid; }
+  /* 每个部分/章/条目已各自另起一页，条目间的 <hr> 没有视觉功能；
+     留着它会在上一页排满时掉到新页、再被标题的强制分页顶成一张
+     空白页（2026-10-08 实测：第 143 页整页空白）。屏幕阅读不受影响。 */
+  hr { display: none; }
   /* 兜底：万一正文里又写回了显式分页符，仍按「其后另起一页」处理 */
   div[style*="page-break"] { page-break-after: always; break-after: page; }
   a { color: #0b5cad; }
