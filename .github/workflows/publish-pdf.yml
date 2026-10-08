@@ -56,22 +56,65 @@ jobs:
           ls -lh dist/
 
       - name: 发布到固定 Release（book-latest，同名覆盖）
-        # 用 gh 只替换资产，不触碰 Release 的说明文字与其它产物（HTML / EPUB / 台账）。
+        # 只替换 PDF 资产，不触碰 Release 的说明文字与其它产物（HTML / EPUB / 台账）。
+        # 中文资产名走 REST API 并显式百分号编码：gh CLI 遇到非 ASCII 名会退化成
+        # default.<ext>（首次发布实测如此），生成的下载链接会变成不可读的 default.pdf。
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          API="https://api.github.com/repos/$REPO"
+          REL_ID=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+                   "$API/releases/tags/book-latest" | jq -r '.id')
+          echo "release id = $REL_ID"
+
+          upload() {
+            local file="$1" name="$2" aid enc
+            aid=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+                    "$API/releases/$REL_ID/assets?per_page=100" \
+                  | jq -r --arg n "$name" '.[] | select(.name==$n) | .id' | head -1)
+            if [ -n "$aid" ]; then
+              curl -fsSL -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
+                "$API/releases/assets/$aid" >/dev/null
+              echo "  删除旧资产：$name (id=$aid)"
+            fi
+            enc=$(jq -rn --arg s "$name" '$s|@uri')
+            curl -fsSL -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "https://uploads.github.com/repos/$REPO/releases/$REL_ID/assets?name=$enc" \
+              | jq -r '"  已上传：" + .name + "  " + (.size|tostring) + " B"'
+          }
+
+          upload "dist/董老师香港留学指南.pdf" "董老师香港留学指南.pdf"
+          upload "dist/HKStudyGuide.pdf" "HKStudyGuide.pdf"
+
+          # 清理早期用 gh CLI 上传时退化成名的占位资产
+          for junk in default.pdf; do
+            jid=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+                    "$API/releases/$REL_ID/assets?per_page=100" \
+                  | jq -r --arg n "$junk" '.[] | select(.name==$n) | .id' | head -1)
+            [ -z "$jid" ] || { curl -fsSL -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
+                "$API/releases/assets/$jid" >/dev/null; echo "  清理占位资产：$junk"; }
+          done
+
+      - name: 回执（列出发布位最终资产，便于核对）
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          gh release upload book-latest \
-            "dist/董老师香港留学指南.pdf" \
-            "dist/HKStudyGuide.pdf" \
-            --clobber
-
-      - name: 回执
-        run: |
           {
             echo "## PDF 已发布到 book-latest"
             echo
-            echo "- 来源：\`download/董老师香港留学指南.pdf\`"
-            echo "- 大小：$(du -h "dist/董老师香港留学指南.pdf" | cut -f1)"
-            echo "- 下载：https://github.com/${{ github.repository }}/releases/download/book-latest/董老师香港留学指南.pdf"
+            echo "- 来源：\`download/董老师香港留学指南.pdf\`（$(du -h "dist/董老师香港留学指南.pdf" | cut -f1)）"
+            echo "- 下载（永久指向最新版）："
+            echo "  - https://github.com/${{ github.repository }}/releases/download/book-latest/董老师香港留学指南.pdf"
+            echo "  - https://github.com/${{ github.repository }}/releases/download/book-latest/HKStudyGuide.pdf"
+            echo
+            echo "### 该 Release 当前资产"
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/tags/book-latest" \
+              | jq -r '.assets[] | "- `\(.name)` — \(.size) B"'
           } >> "$GITHUB_STEP_SUMMARY"
