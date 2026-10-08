@@ -255,9 +255,9 @@ def main():
     html_doc = f"""<!DOCTYPE html>
 <html lang="zh-Hans"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>审阅清单 · 董老师香港升学手册</title><style>{CSS}</style></head>
+<title>审阅清单 · 董老师香港留学指南</title><style>{CSS}</style></head>
 <body><div class="wrap">
-<h1>审阅清单 · 董老师香港升学手册</h1>
+<h1>审阅清单 · 董老师香港留学指南</h1>
 <p class="sub">面向读者的全部文件汇总 · 生成于 2026-10-07 · 共 {len(entries)} 条正文 + {len(front_cards)} 页前置 + README 1 份</p>
 
 <div class="stat">

@@ -153,7 +153,8 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 
 problems = {k: [] for k in
-            ("schema", "refs", "links", "promise", "staleness", "coverage", "chapters")}
+            ("schema", "refs", "links", "promise", "staleness", "coverage", "chapters",
+             "pagebreaks", "naming")}
 
 
 def entries():
@@ -503,6 +504,82 @@ def check_chapters(files):
     return per_chapter
 
 
+# ------------------------------------------------- 呈现层：分页符号与项目名（判例 27）
+PAGEBREAK_MARK = '<div style="page-break-after: always;"></div>'
+# 已作废的项目名（2026-10-08 董老师定：对外名称只有「董老师香港留学指南」一个）。
+# 注意：「香港升学」「香港读书」是**通用词**，自媒体宣传材料里可用，不在拦截范围。
+# 字面量**故意拆开拼接**：本文件也在扫描范围内，写完整串会被自己的规则扫到。
+RETIRED_NAMES = ("董老师香港升学" + "手册", "香港升学" + "指南")
+
+
+def check_pagebreaks(files):
+    """判例 27：**源文件里不许出现分页符号**——分页是版式层的事。
+
+    为什么必须机器校验：分页符是「印刷指令」，混进 markdown 会被一起喂给
+    llms-full / AI / EPUB / 人读，是噪音；而且它一旦散落在正文各处，
+    就没人能保证「分页规则只有一处实现」（判例 15）。规则写在文档里 ≠ 规则生效。
+
+    扫描范围刻意收窄为**源文件**（book/ + meta/ + release/*.md）：
+    assets/book-style.html 里的 `page-break-after: avoid` 是正当的版式规则。
+    """
+    hits = 0
+    targets = []
+    for sub in ("book", "meta", "release"):
+        d = os.path.join(ROOT, sub)
+        if os.path.isdir(d):
+            targets += [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(".md")]
+    for path in targets:
+        try:
+            text = read(path)
+        except OSError:
+            continue
+        if PAGEBREAK_MARK in text:
+            rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+            problems["pagebreaks"].append(
+                f"{rel}：出现分页符号——删掉它，分页由 assets/book-style.html 的 @media print 承担"
+            )
+            hits += 1
+    return hits
+
+
+def check_naming(files):
+    """判例 27：项目对外名只有一个——**「董老师香港留学指南」**。
+
+    只拦**已作废的旧名**（见 `RETIRED_NAMES`：原「…升学手册」与「…升学指南」两种写法）。
+    「香港升学」「香港读书」是通用词 / 自媒体规避词，**不拦**。
+    扫描范围＝对外材料（README / llms / book / meta / release / assets / tools）；
+    CLAUDE.md 与 docs/ 是内部记录，允许为存档目的提到历史名。
+    """
+    hits = 0
+    targets = []
+    for rel in ("README.md", "llms.txt"):
+        p = os.path.join(ROOT, rel)
+        if os.path.isfile(p):
+            targets.append(p)
+    for sub, pat in (("book", ".md"), ("meta", ".md"), ("release", ".md"),
+                     ("assets", None), ("tools", ".py")):
+        d = os.path.join(ROOT, sub)
+        if not os.path.isdir(d):
+            continue
+        for fn in sorted(os.listdir(d)):
+            if pat is None or fn.endswith(pat):
+                targets.append(os.path.join(d, fn))
+    for path in targets:
+        try:
+            text = read(path)
+        except OSError:
+            continue
+        for bad in RETIRED_NAMES:
+            if bad in text:
+                rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+                problems["naming"].append(
+                    f"{rel}：出现已作废的项目名「{bad}」——对外名称只有「董老师香港留学指南」"
+                )
+                hits += 1
+                break
+    return hits
+
+
 # ---------------------------------------------------------------- release
 RE_REVIEWED = re.compile(r"最后更新\*{0,2}\s*[:：]\s*\*{0,2}(\d{4}-\d{2}-\d{2})")
 
@@ -620,6 +697,8 @@ TITLES = {
     "staleness": f"核实时效（{STALE_DAYS} 天红线）",
     "coverage": "质量覆盖率（误传 ≥50% / A 级 ≥60%）",
     "chapters": "读者章分类（每条登记且取值合法 / 各章合计 == 条目总数）",
+    "pagebreaks": "分页符号（源文件不带印刷指令，分页归版式层——判例 27）",
+    "naming": "项目名统一（对外只有「董老师香港留学指南」——判例 27）",
 }
 
 
@@ -666,6 +745,10 @@ def main():
     chapter_counts = None
     if "chapters" in todo:
         chapter_counts = check_chapters(files)
+    if "pagebreaks" in todo:
+        check_pagebreaks(files)
+    if "naming" in todo:
+        check_naming(files)
 
     if chapter_counts:
         print("\n读者章（分类）分布")

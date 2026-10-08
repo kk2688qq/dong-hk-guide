@@ -1,6 +1,6 @@
 <style>
 /* ============================================================
-   董老师香港升学手册 · 单文件产物样式（HTML + EPUB + PDF 同源）
+   董老师香港留学指南 · 单文件产物样式（HTML + EPUB + PDF 同源）
    由 .github/workflows/book.yml 通过 --include-in-header 注入。
    排在 pandoc 默认样式之后，同权重规则以本文件为准。
    ============================================================ */
@@ -177,10 +177,14 @@ li { margin: .3em 0; }
   h1 { margin-top: 1.6em; page-break-after: avoid; }
   h2, h3 { page-break-after: avoid; }
   table, blockquote { page-break-inside: avoid; }
-  /* 显式分页符：正文里 <div style="page-break-after: always;"></div>（2026-10-07 定稿 C-4）。
-     weasyprint 会直接吃内联样式；这条是兜底——万一内联样式被 reset 或被
-     markdown 处理器改写，块级 div 仍按「其后另起一页」处理。
-     EPUB / 单文件 HTML 里它是个空 div，无副作用。 */
+  /* 分页归版式层（2026-10-08 董老师定：源文件里不再写分页符号）。
+     规则：目录页 + 每个章节级标题各自另起一页——等价于原先「每个标题前一个
+     显式分页符」的观感；封面（第一个 h1）不另起页。
+     只在打印 / PDF 生效，屏幕阅读与 EPUB 不受影响。 */
+  nav#TOC { page-break-before: always; break-before: page; }
+  h1, h2, h3 { page-break-before: always; break-before: page; }
+  h1:first-of-type { page-break-before: avoid; break-before: auto; }
+  /* 兜底：万一正文里又写回了显式分页符，仍按「其后另起一页」处理 */
   div[style*="page-break"] { page-break-after: always; break-after: page; }
   a { color: #0b5cad; }
 }

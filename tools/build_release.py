@@ -7,7 +7,9 @@ front-* + 按「读者章」重排的 book/ + about + 纠错台账），结构�
 内容和格式来做」——即**以定稿为唯一源**，不再重新拼装。
 
 定稿本身是一份完整的成书稿：封面（书名/副题/版本行/联系方式）、五个部分、
-章级 H2、49 条正文（`### HK-xxx`）、93 处显式分页符。本脚本做三件事：
+章级 H2、49 条正文（`### HK-xxx`）。**分页由版式层负责**（判例 27，2026-10-08
+董老师定：源文件不再带分页符号）——`assets/book-style.html` 的 `@media print`
+让目录与每个章节级标题各自另起一页。本脚本做三件事：
 
 1. HKStudyGuide.html —— 定稿 → 自包含线性 HTML（封面 + 目录 + 正文，样式内嵌）。
    取代旧的「阅读器」（build_reader.py 产物，2026-10-08 董老师停用）。
@@ -38,8 +40,8 @@ STYLE = os.path.join(ROOT, "assets", "book-style.html")
 DEFAULT_DRAFT = os.path.join(ROOT, "release", "定稿-董老师香港留学指南.md")
 TITLE = "董老师香港留学指南"
 
+# 旧稿里可能残留的显式分页符（判例 27 起源文件不再写；这里只做兼容与兜底）
 RE_PAGEBREAK = re.compile(r'<div style="page-break-after: always;"></div>')
-PAGEBREAK_HTML = '<div style="page-break-after: always;"></div>'
 
 # Chrome / Edge 的候选路径（Windows 本机打印 PDF 用）
 _BROWSERS = [
@@ -109,12 +111,22 @@ def build_toc_html(tokens) -> str:
 
 
 def inject_toc(body: str, toc_html: str) -> str:
-    """封面之后插目录，目录后加分页符再进正文（否则第一部分顶在目录下面）。"""
+    """把目录插在封面之后、正文之前。
+
+    2026-10-08 起源文件不再带分页符号（判例 27），定位改用**结构**：
+    第 2 个 `<h1>` 之前（第 1 个是封面书名，第 2 个是「# 第一部分」）。
+    目录本身另起一页由 assets/book-style.html 的 `nav#TOC{page-break-before}`
+    承担——所以这里不再注入任何分页符。
+    """
     hits = list(RE_PAGEBREAK.finditer(body))
     if len(hits) >= 2:
-        pos = hits[1].end()
-        return body[:pos] + "\n\n" + toc_html + "\n\n" + PAGEBREAK_HTML + "\n\n" + body[pos:]
-    print("  ! 没找到封面后的分页符，目录放在最前")
+        # 兼容旧稿：源里还留着分页符时按旧法定位（封面后第一处）
+        return body[:hits[1].end()] + "\n\n" + toc_html + "\n\n" + body[hits[1].end():]
+    h1s = [m.start() for m in re.finditer(r"<h1[ >]", body)]
+    if len(h1s) >= 2:
+        pos = h1s[1]
+        return body[:pos] + toc_html + "\n\n" + body[pos:]
+    print("  ! 没找到封面后的第一个 h1，目录放在最前")
     return toc_html + "\n\n" + body
 
 
@@ -192,6 +204,9 @@ def verify(out_dir: str) -> None:
     ext = [u for u in ext if not u.startswith(("http", "mailto:"))]
     if ext:
         problems.append(f"HTML 残留外部引用 {len(ext)} 个：{ext[:5]}")
+    n_pb = len(RE_PAGEBREAK.findall(html))
+    if n_pb:
+        problems.append(f"HTML 里残留 {n_pb} 处显式分页符（判例 27：分页归版式层）")
     for bad in ("WB2", "WB4", "判例"):
         if bad in html:
             problems.append(f"HTML 含内部术语「{bad}」")
