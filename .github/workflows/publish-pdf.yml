@@ -3,10 +3,14 @@ name: publish-pdf
 # 把成品 PDF 发布到固定的下载位（Release: book-latest）。
 #
 # 为什么单独一个工作流、而不是并进 book.yml：
-#   1. book.yml 的 PDF 是**构建器现场生成**的（weasyprint 吃 print.html）。
-#      成品（A4 / 191 页 / 中文字体已嵌入）观感与页数都更好，是董老师确认要发出去的那一版。
+#   1. book.yml 的 PDF 是**构建器现场生成**的（weasyprint 吃 print.html），
+#      每个 h1/h2/h3 强制另起一页，条目页大量留白。
+#      成品（董老师 2026-10-09 裁定的版式：全书不分页、封面左对齐，A4 / 269 页 /
+#      中文字体已嵌入）观感与页数都更好，是董老师确认要发出去的那一版。
 #   2. book.yml 同时负责站点与单文件 HTML 的发布，那两项另有负责人；
 #      本工作流的触发路径**刻意避开**它的白名单，只动 PDF 这一个下载位，互不牵连。
+#      （2026-10-09 事故：book.yml 侧一度也上传 dist/HKStudyGuide.pdf 抢同一资产名，
+#        把成品版覆盖；现已摘除，并加 workflow_run 自愈。）
 #
 # 触发：把新的成品 PDF 覆盖到 download/董老师香港留学指南.pdf 后 push，即自动发布。
 # 也可在 Actions 页手动 Run workflow。
@@ -24,6 +28,14 @@ on:
     paths:
       - "download/**"
       - ".github/workflows/publish-pdf.yml"
+  # 自愈：build-book 跑完（无论成功与否）再落一次位。
+  # 起因见 2026-10-09 的事故——build-book 的 Release 步骤曾把 dist/HKStudyGuide.pdf
+  # 一起上传，与本工作流抢同一资产名且通常后完成，把成品 PDF 覆盖成 weasyprint 现场版。
+  # 现在 book.yml 侧已摘掉 PDF，这里再加一道保险：只要构建结束，成品 PDF 总会回到发布位。
+  workflow_run:
+    workflows: ["build-book"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

@@ -79,6 +79,11 @@ jobs:
           test -s dist/print.html
 
       - name: Build PDF (weasyprint，与 HTML 同一 print.html 源)
+        # ⚠️ 这个 PDF **只进 artifact**（供构建自检与人工预看），不发布到 Release。
+        # 发布位的 PDF 由 publish-pdf.yml 独家负责，来源是 download/董老师香港留学指南.pdf
+        # （董老师确认的成品版式）。2026-10-09 曾因本任务把 dist/HKStudyGuide.pdf 一起
+        # 推上 Release，把成品 PDF 覆盖成 weasyprint 现场版（大 3.6 倍页数、观感不同），
+        # 故此处明确不再上传，两个工作流各守一个下载位。
         run: |
           python3 -m weasyprint dist/print.html dist/HKStudyGuide.pdf \
             || echo "::warning::PDF 构建失败，HTML/EPUB 不受影响"
@@ -120,8 +125,10 @@ jobs:
           files: |
             dist/HKStudyGuide.html
             dist/HKStudyGuide.epub
-            dist/HKStudyGuide.pdf
             docs/纠错台账.md
+          # ❗ 刻意不含 dist/HKStudyGuide.pdf：该资产的发布权归 publish-pdf.yml
+          #   （成品版式，来源 download/董老师香港留学指南.pdf）。若在此补上 PDF，
+          #   本任务会与 publish-pdf 抢同一个资产名，且本任务通常后完成 → 覆盖成品版。
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
