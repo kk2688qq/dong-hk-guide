@@ -14,6 +14,7 @@
 import os
 import re
 import io
+import glob
 import html
 import json
 import shutil
@@ -1416,6 +1417,14 @@ Sitemap: {0}sitemap.xml
         if os.path.isdir(src_md):
             shutil.copytree(src_md, os.path.join(out_dir, "md"), dirs_exist_ok=True)
             written.append("md/")
+
+    # 6.5) IndexNow 密钥文件（2026-10-10 WB2 加）：仓库根的 32 位十六进制 .txt
+    #      （IndexNow 协议要求密钥文件挂在**被提交 URL 的同一 host**下，故须随站
+    #      发布到站点根目录）。仓库根新增/更换密钥文件时无需改本生成器。
+    for _p in glob.glob("[0-9a-f]" * 32 + ".txt"):
+        if os.path.isfile(_p):
+            shutil.copyfile(_p, os.path.join(out_dir, os.path.basename(_p)))
+            written.append(os.path.basename(_p))
         # 旧 URL 别名：entry-HK-009.html → hk-009.html（站点改版前的深链不失效）
         alias = 0
         alias_map = {}
