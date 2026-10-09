@@ -1425,6 +1425,12 @@ Sitemap: {0}sitemap.xml
         if os.path.isfile(_p):
             shutil.copyfile(_p, os.path.join(out_dir, os.path.basename(_p)))
             written.append(os.path.basename(_p))
+
+    # 6.6) Bing 站长平台验证文件（2026-10-10 WB2 加）：BingSiteAuth.xml 须位于
+    #      站点根（https://.../BingSiteAuth.xml）才能通过归属验证，同理随站发布。
+    if os.path.isfile("BingSiteAuth.xml"):
+        shutil.copyfile("BingSiteAuth.xml", os.path.join(out_dir, "BingSiteAuth.xml"))
+        written.append("BingSiteAuth.xml")
         # 旧 URL 别名：entry-HK-009.html → hk-009.html（站点改版前的深链不失效）
         alias = 0
         alias_map = {}
