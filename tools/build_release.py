@@ -7,7 +7,7 @@ front-* + 按「读者章」重排的 book/ + about + 纠错台账），结构�
 内容和格式来做」——即**以定稿为唯一源**，不再重新拼装。
 
 定稿本身是一份完整的成书稿：封面（书名/副题/版本行/联系方式）、五个部分、
-章级 H2、49 条正文（`### HK-xxx`）。**分页由版式层负责**（判例 27，2026-10-08
+章级 H2、全部条目正文（`### HK-xxx`）。**分页由版式层负责**（判例 27，2026-10-08
 董老师定：源文件不再带分页符号）——`assets/book-style.html` 的 `@media print`
 让目录与每个章节级标题各自另起一页。本脚本做三件事：
 
@@ -230,8 +230,12 @@ def build_epub(draft_path: str, out_dir: str) -> str:
     return dst
 
 
-def verify(out_dir: str) -> None:
-    """产物自检：外部引用、内部术语、PDF 页数与抽样、EPUB 结构。"""
+def verify(out_dir: str, n_expected: int = 0) -> None:
+    """产物自检：外部引用、内部术语、PDF 页数与抽样、EPUB 结构。
+
+    `n_expected`＝定稿里的条目数（`### HK-xxx`）。目录必须列全，但**不硬编码条数**——
+    2026-10-09 书稿 49→67 时，此处原先写死 `!= 49`，会把 67 条的正常产物误报为「目录没列全」。
+    """
     problems = []
 
     html_path = os.path.join(out_dir, "HKStudyGuide.html")
@@ -247,15 +251,15 @@ def verify(out_dir: str) -> None:
         if bad in html:
             problems.append(f"HTML 含内部术语「{bad}」")
 
-    # 目录：必须列到全部 49 条（董老师 2026-10-08：目录要能直接点到某一条）
+    # 目录：必须列到全部条目（董老师 2026-10-08：目录要能直接点到某一条）
     mtoc = re.search(r'<nav id="TOC">(.*?)</nav>', html, flags=re.S)
     if not mtoc:
         problems.append("HTML 里没有目录（nav#TOC 缺失）")
     else:
         n_toc_items = len(re.findall(r">HK-\d{3}", mtoc.group(1)))
         print(f"  · 目录：{n_toc_items} 条")
-        if n_toc_items != 49:
-            problems.append(f"目录里的条目数 {n_toc_items} ≠ 49（目录没列全）")
+        if n_expected and n_toc_items != n_expected:
+            problems.append(f"目录里的条目数 {n_toc_items} ≠ {n_expected}（目录没列全）")
 
     # 封面：整块必须在一个 div.cover 里（否则会被拆页）
     if 'class="cover"' not in html:
@@ -331,7 +335,8 @@ def main():
         p = build_epub(args.draft, args.out)
         print(f"  ✓ EPUB  {os.path.basename(p)}  {os.path.getsize(p):,} 字节")
     if not args.no_verify:
-        verify(args.out)
+        n_expected = len(re.findall(r"^### HK-\d{3}", draft, flags=re.M))
+        verify(args.out, n_expected=n_expected)
     return 0
 
 

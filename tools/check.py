@@ -74,6 +74,21 @@ WHITELIST_DOMAINS = (
     # 官方发布渠道。二者均为官方，非商业、非媒体。
     # （2026-10-07 增补：HK-043 联考打假；逐域列举，不放开 .gov.cn／.com.cn 全域）
     "eea.gd.gov.cn", "gatzs.com.cn",
+    # 第二批 18 条（2026-10-09）新引用的官方一手发布方 —— 判据同判例 17，**逐域列举**：
+    #  · hksyu.edu          香港树仁大学官网（本校「学校定位／学系」的官方一手发布方；
+    #                       该校用 .edu 而非 .edu.hk，未被上面的 `edu.hk` 全域覆盖）
+    #  · cscse.edu.cn       教育部留学服务中心（留服中心）——「国（境）外学历学位认证」的
+    #                       官方一手发布方（HK-060；认证业务在其下属中心站点，非 moe.gov.cn 本站）
+    #  · edu.dg.gov.cn      东莞市教育局——香港城市大学（东莞）属地教育行政部门的官方发布渠道
+    #                       （HK-064；**仍不放开 .gov.cn 全域**，只列这一个具体域名）
+    #  · harrowhongkong.hk  哈罗香港国际学校官网——校方是「本校宿舍／宿费」的官方一手发布方
+    #                       （HK-056；判据同 `edu.hk` 全域那一条，**仍不放开 .hk 全域**，逐校列举）
+    "hksyu.edu", "cscse.edu.cn", "edu.dg.gov.cn", "harrowhongkong.hk",
+    #  · bnbu.edu.cn / cityu-dg.edu.cn  北师香港浸会大学（原 UIC）与香港城市大学（东莞）
+    #     —— 两所内地与香港合作办学高校**本校**的官方招生站，判据与上面 `cuhk.edu.cn`、
+    #        `hkust-gz.edu.cn` 完全一致（校方是「本校招生规则／颁证说明」的官方一手发布方）。
+    #        **仍逐校列举，不放开 .edu.cn 全域**（HK-064）。
+    "bnbu.edu.cn", "cityu-dg.edu.cn",
 )
 # 内容分发渠道（可写进正文，不是依据来源）
 CHANNELS = ("zhihu.com", "xiaohongshu.com", "douyin.com", "mp.weixin.qq.com")
@@ -113,7 +128,11 @@ INTERNAL_TERMS = (
     ("内部判例号", r"判例\s*\d"),
     ("内部自称", r"本项目"),
     ("内部过程词", r"信源勘察|校验包|交接日志|任务看板|核实记录/\d"),
-    ("内部路径", r"docs/"),
+    # 内部路径：2026-10-09 收窄——原 `docs/` 会命中**正文里的官方链接**
+    # （HK-068 引港科大 `<https://join.hkust.edu.hk/docs/Interview_JUPAS.pdf>`，
+    #  URL 路径里就有 `docs/`），属假阳性。走「先怀疑脚本」纪律（判例 10 同款修法）：
+    # 要求 `docs/` 不是更长路径／URL 的一段（前面不能是词字符或 `/`），**不放松真实约束**。
+    ("内部路径", r"(?<![\w/])docs/"),
 )
 # 标题（方案 A）：必须以 HK 编号开头
 RE_TITLE_HK = re.compile(r"^#\s+(HK-\d{3})\s+\S")

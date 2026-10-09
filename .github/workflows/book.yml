@@ -67,7 +67,8 @@ jobs:
             || echo "::warning::book/ 与定稿不一致——产物仍按定稿出，请尽快 sync_from_draft.py --write 对齐"
 
       - name: Build release files（定稿直出：HTML + EPUB + 打印版 print.html）
-        # 定稿本身是完整成书稿（封面/五部分/49 条/93 处分页符），不再重新拼装。
+        # 定稿本身是完整成书稿（封面/五部分/全部条目），不再重新拼装。
+        # 条数不在此处写死（2026-10-09 书稿 49→67 时曾残留旧数），以 build_release.py 自检为准。
         # 结构性差异（此前 CI 拼的 head.md + 按「读者章」重排）已废弃。
         run: |
           set -euo pipefail
@@ -181,7 +182,7 @@ jobs:
           #    避免同一内容两套 URL 分散搜索引擎收录权重。
           python3 tools/build_site.py --out site-ai
           # ② 读者主站：按定稿（release/定稿-董老师香港留学指南.md）直出多页站——
-          #    首页 + 4 阅读页 + 49 个 hk-XXX.html 条目页 + sitemap.xml + robots.txt。
+          #    首页 + 4 阅读页 + 每条目一个 hk-XXX.html 条目页 + sitemap.xml + robots.txt。
           #    主题 B「暖纸手册」（2026-10-08 董老师拍板；生成器 tools/build_web.py）。
           #    --ai-dir 并入 AI 可读层（robots.txt 单一来源仍是仓库根），并把旧
           #    entry-HK-*.html / front-*.html 生成 noindex 别名页——改版前深链不失效。

@@ -2,7 +2,8 @@
 """
 《董老师香港留学指南》多页站点生成器
 ====================================
-输入：书稿目录下的 香港留学指南.md（build.py 装配产物，49 条）
+输入：《董老师香港留学指南》定稿（`release/定稿-董老师香港留学指南.md`；
+      本机默认兜底为书稿目录的 香港留学指南.md）。条目数由定稿实际解析得出。
 输出：一个多页静态站点（左侧菜单 + 右侧内容），每个条目一个独立页面，
       面向搜索引擎与 AI 爬虫做收录（SEO 头 / JSON-LD / sitemap / robots）。
 
@@ -25,10 +26,21 @@ DEFAULT_MD = os.path.join(os.path.dirname(HERE), "香港留学指南-书稿", "�
 # 站点根 URL（canonical / sitemap 用）。CI 里传 SITE_BASE_URL，与仓库 build_site.py 同一变量名。
 BASE = (os.environ.get("SITE_BASE_URL") or "https://kk2688qq.github.io/dong-hk-guide").rstrip("/") + "/"
 SITE_TITLE = "董老师香港留学指南"
-SITE_DESC = ("讲香港读书这件事：中学插班、高考生申大学、本科申硕士、"
-             "高才通/优才/受养人/IANG/永居身份规划、费用预算、防骗打假。"
-             "49 条，每条写明花掉什么、换回什么、漏掉会怎样、官方依据是什么，"
-             "来源只引香港入境处、教育局、各校官网和法例原文。")
+# 条目数：**由定稿实际解析结果写入**（单一来源，勿在此硬编码第二份）。
+# 2026-10-09 修：此处及全文件原有 6 处硬编码「49 条」，书稿 49→67 后站点会
+# 一边宣称「49 条」一边列出 67 条——与文件自身「版本/更新时间从定稿解析」同一原则。
+N_ENTRIES = 0
+SITE_DESC_HEAD = ("讲香港读书这件事：中学插班、高考生申大学、本科申硕士、"
+                  "高才通/优才/受养人/IANG/永居身份规划、费用预算、防骗打假。")
+SITE_DESC_TAIL = ("每条写明花掉什么、换回什么、漏掉会怎样、官方依据是什么，"
+                  "来源只引香港入境处、教育局、各校官网和法例原文。")
+
+
+def site_desc():
+    """站点描述（条数取自定稿实际解析结果，不硬编码）。"""
+    return "%s%d 条，%s" % (SITE_DESC_HEAD, N_ENTRIES, SITE_DESC_TAIL)
+
+
 LANG = "zh-Hans"
 # 版本与更新时间：**从定稿正文解析**（单一来源，勿在此硬编码第二份）
 VERSION = "v1.0"
@@ -281,7 +293,8 @@ def sidebar_html(active, chapters, pages_meta):
     out = []
     out.append('<a class="brand" href="index.html">')
     out.append('<span class="brand-t">董老师香港留学指南</span>')
-    out.append('<span class="brand-s">%s · 49 条 · 可核回官方原文</span>' % VERSION)
+    out.append('<span class="brand-s">%s · %d 条 · 可核回官方原文</span>'
+               % (VERSION, N_ENTRIES))
     out.append("</a>")
     out.append('<input id="navq" type="search" placeholder="筛选条目…" aria-label="筛选侧栏条目">')
     out.append('<nav class="nav">')
@@ -422,7 +435,7 @@ def entry_desc(entry):
     for f in entry["fields"]:
         if f["name"] in ("快速说明", "说人话"):
             return first_paragraph_text(clean_lines(f["lines"]))
-    return SITE_DESC[:110]
+    return site_desc()[:110]
 
 
 def foot_html():
@@ -1110,8 +1123,8 @@ def single_html(head, doc, chapters, ids, base, theme_css):
             toc.append('<a href="%s">%s</a>'
                        % (part_anchor[i], html.escape(doc["parts"][i]["title"])))
     if len(doc["parts"]) > 2:
-        toc.append('<a href="#entries">%s（49 条）</a>'
-                   % html.escape(doc["parts"][2]["title"]))
+        toc.append('<a href="#entries">%s（%d 条）</a>'
+                   % (html.escape(doc["parts"][2]["title"]), N_ENTRIES))
     toc.extend(toc_groups)
     toc.append("</nav>")
 
@@ -1121,17 +1134,17 @@ def single_html(head, doc, chapters, ids, base, theme_css):
     hero = """<div class="hero">
 <h1>%s</h1>
 <p class="tagline">中学插班 · 本科申请 · 本科申硕 · 身份规划 · 费用预算 · 防骗打假</p>
-<div class="vers"><span class="chip c-low">%s</span><span class="chip">49 条收录</span><span class="chip">离线单文件版</span></div>
+<div class="vers"><span class="chip c-low">%s</span><span class="chip">%d 条收录</span><span class="chip">离线单文件版</span></div>
 <p class="contact">本文件是整本书的单文件版：保存到手机或电脑即可离线阅读，双击就开，也方便直接转发。<br>
 在线版永远是最新版：<a href="%s">%s</a><br>
 本文由董老师审核。联系董老师：微信 jack787300 / dxw22465 · 邮箱 kk2688@agent.qq.com</p>
-</div>""" % (SITE_TITLE, VERSION, base, base)
+</div>""" % (SITE_TITLE, VERSION, N_ENTRIES, base, base)
 
     main = ('<header class="sbar"><div class="sbar-t">%s'
-            '<span class="sbar-v">%s · 49 条 · 最后更新 %s · 离线单文件版</span></div>'
+            '<span class="sbar-v">%s · %d 条 · 最后更新 %s · 离线单文件版</span></div>'
             '<a class="sbar-link" href="%s">在线版（最新）</a></header>'
             '<main class="main"><div class="wrap"><span id="sec-intro"></span>%s%s%s%s%s%s%s%s</div></main>'
-            % (SITE_TITLE, VERSION, LASTMOD, base,
+            % (SITE_TITLE, VERSION, N_ENTRIES, LASTMOD, base,
                hero, "\n".join(toc),
                "\n".join(intro_secs),
                part_block(0), part_block(1),
@@ -1144,7 +1157,7 @@ def single_html(head, doc, chapters, ids, base, theme_css):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{SITE_TITLE}（单文件离线版）</title>
-<meta name="description" content="{html.escape(SITE_DESC[:150])}">
+<meta name="description" content="{html.escape(site_desc()[:150])}">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FBF7F0">
 <style>
@@ -1164,7 +1177,7 @@ def single_html(head, doc, chapters, ids, base, theme_css):
 
 
 def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
-    global VERSION, LASTMOD
+    global VERSION, LASTMOD, N_ENTRIES
     theme_css = THEMES[theme]["css"] if theme in THEMES else ""
     doc, chapters = parse(md_path)
     if not base.endswith("/"):
@@ -1196,6 +1209,9 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
             entry_chapter[e["id"]] = ch
             flat.append(e)
 
+    # 条目数＝定稿实际解析出的条数（单一来源；站点上各处显示都读它）
+    N_ENTRIES = len(flat)
+
     pages_meta = {"parts": []}
     part_slugs = {0: "part-1", 1: "part-2", 3: "part-4", 4: "part-5"}
     # doc["parts"] 顺序：0=第一部分 1=第二部分 2=第三部分(正文，不单独成页) 3=第四 4=第五
@@ -1203,7 +1219,7 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
                  None, "许可与免责", "关于本书"]
     for i, p in enumerate(doc["parts"]):
         if i not in part_slugs:
-            continue  # 第三部分 = 49 条条目页本身，不设阅读页
+            continue  # 第三部分 = 各条目页本身，不设阅读页
         pages_meta["parts"].append({"slug": part_slugs[i],
                                     "nav": part_navs[i] or p["title"],
                                     "title": p["title"]})
@@ -1245,26 +1261,26 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
 <h1>董老师香港留学指南</h1>
 <p class="tagline">中学插班 · 本科申请 · 本科申硕 · 身份规划 · 费用预算 · 防骗打假</p>
 <div class="vers">
-<span class="chip c-low">%s</span><span class="chip">49 条收录</span>
+<span class="chip c-low">%s</span><span class="chip">%d 条收录</span>
 <span class="chip">A 级官方信源 84%%</span><span class="chip">每条可核回官方原文</span>
 </div>
 <p class="contact"><a href="https://kk2688qq.github.io/dong-hk-guide/">在线版（永远是最新版）</a><br>
 <a href="single.html" download="%s">下载单文件版（离线可用，随网站同步更新）</a><br>
 <a href="https://github.com/kk2688qq/dong-hk-guide">GitHub 仓库</a><br>
 本文由董老师审核。更多问题请联系微信：jack787300、dxw22465，邮箱：kk2688@agent.qq.com</p>
-</div>""" % (VERSION, SINGLE_DL)
+</div>""" % (VERSION, N_ENTRIES, SINGLE_DL)
     index_main = ('<div class="wrap">%s<div class="sect">%s</div>%s</div>'
                   % (hero, intro_html, foot))
     idx_ld = {
         "@context": "https://schema.org", "@type": "Book",
         "name": SITE_TITLE, "author": {"@type": "Person", "name": "董老师"},
         "inLanguage": LANG, "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-        "description": SITE_DESC, "version": VERSION,
+        "description": site_desc(), "version": VERSION,
         "dateModified": LASTMOD, "url": base,
     }
     cr, crld = breadcrumb([("首页", None)])
-    write("index.html", "%s — 49 条，每条可核回官方原文" % SITE_TITLE,
-          SITE_DESC[:150], "index", "", sb("index"), index_main, idx_ld)
+    write("index.html", "%s — %d 条，每条可核回官方原文" % (SITE_TITLE, N_ENTRIES),
+          site_desc()[:150], "index", "", sb("index"), index_main, idx_ld)
 
     # 2) 阅读页（第一/二/四/五部分）
     for i, p in enumerate(doc["parts"]):
@@ -1283,7 +1299,7 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
                 "<article><h1>%s</h1>%s</article>%s</div>%s"
                 % (html.escape(p["title"]), html.escape(p["title"]),
                    "\n".join(secs), foot, ""))
-        desc = first_paragraph_text(p["secs"][0]["lines"] and clean_lines(p["secs"][0]["lines"]) or SITE_DESC, 110) if p["secs"] else SITE_DESC[:110]
+        desc = first_paragraph_text(p["secs"][0]["lines"] and clean_lines(p["secs"][0]["lines"]) or site_desc(), 110) if p["secs"] else site_desc()[:110]
         ld = {"@context": "https://schema.org", "@type": "WebPage",
               "name": "%s：%s" % (SITE_TITLE, p["title"]),
               "description": desc, "inLanguage": LANG,
@@ -1294,7 +1310,7 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
         write("%s.html" % slug, "%s：%s" % (SITE_TITLE, p["title"]),
               desc, slug, "%s.html" % slug, sb(slug), main, ld)
 
-    # 3) 条目页 × 49
+    # 3) 条目页 × N_ENTRIES
     for ch in chapters:
         for e in ch["entries"]:
             slug = e["id"].lower()

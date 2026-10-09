@@ -66,8 +66,9 @@ nav#TOC ul {
   columns: 2;
   column-gap: 42px;
 }
-/* 目录三层：部分（lv1）/ 章（lv2）/ 条目（lv3）。2026-10-08 起目录列到 49 条，
-   结构由 tools/build_release.py 按标题级别过滤生成（条目内部的小节不列）。 */
+/* 目录三层：部分（lv1）/ 章（lv2）/ 条目（lv3）。2026-10-08 起目录列到**全部条目**
+   （当前 67 条；条数不在此处硬编码，由 tools/build_release.py 按标题级别过滤生成，
+   条目内部的小节不列）。 */
 nav#TOC li { break-inside: avoid; margin: .1em 0; font-size: .9em; line-height: 1.6; }
 nav#TOC li.lv1 { font-weight: 700; margin: .85em 0 .25em; font-size: .97em; }
 nav#TOC li.lv1 > a { color: #12406e; }
