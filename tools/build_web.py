@@ -1175,7 +1175,7 @@ def single_html(head, doc, chapters, ids, base, theme_css):
         toc.append('<a href="#sec-intro">导读 · 这本书怎么用</a>')
     for i in (0, 1, 3, 4):
         if i < len(doc["parts"]) and doc["parts"][i]["secs"]:
-            toc.append('<a href="%s">%s</a>'
+            toc.append('<a href="#%s">%s</a>'
                        % (part_anchor[i], html.escape(doc["parts"][i]["title"])))
     if len(doc["parts"]) > 2:
         toc.append('<a href="#entries">%s（%d 条）</a>'

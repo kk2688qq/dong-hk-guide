@@ -30,8 +30,13 @@ rm -rf "$OUT"
   --seo-map "$ROOT/meta/seo-keywords.json" \
   --feedback
 
+echo "①.5 AI 可读层（llms.txt / llms-full.txt / 404.html）"
+# 仓库根的 llms.txt 是 GitHub 站的单一来源，其中的相对链接（./book/*.md、./docs/…）
+# 在自有域名站上是死链；build_ai_hkgui.py 只重写链接目标，事实与数字一字不动。
+"$PY" "$HERE/build_ai_hkgui.py" --out "$OUT" --base "$BASE"
+
 echo "② 本地自检"
-for f in index.html sitemap.xml robots.txt llms.txt hk-002.html hub-undergrad.html; do
+for f in index.html sitemap.xml robots.txt llms.txt llms-full.txt 404.html hk-002.html hub-undergrad.html; do
   [ -f "$OUT/$f" ] || { echo "  ✗ 缺文件：$f"; exit 1; }
 done
 echo "  文件数：$(ls "$OUT" | wc -l) · sitemap URL：$(grep -c '<url>' "$OUT/sitemap.xml")"
