@@ -484,7 +484,7 @@ def feedback_html(slug, page_label):
 </section>
 <script>
 (function(){{
-  var box=document.querySelector('.fb'); if(!box) return;
+  var box=document.querySelector('.fb[data-slug]'); if(!box) return;
   var slug=box.getAttribute('data-slug'), page=box.getAttribute('data-page');
   try{{fetch('/api/view',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{slug:slug}}),keepalive:true}});}}catch(e){{}}
   var f=box.querySelector('form'), m=box.querySelector('.fb-m');
