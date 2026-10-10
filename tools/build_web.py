@@ -328,8 +328,14 @@ def page_shell(title, desc, slug, canonical_path, sidebar, main_html,
     css = CSS + theme_css
     main_html = ext_links(main_html)  # 站外链接统一新窗口（含页脚在线版/GitHub 等）
     js = JS
-    jsonld_s = json.dumps(jsonld, ensure_ascii=False) if jsonld else ""
-    ld = ('<script type="application/ld+json">%s</script>' % jsonld_s) if jsonld else ""
+    # 2026-10-10 WB2：支持 jsonld 为 dict（原行为）或 list（多块 JSON-LD，
+    # 自有域名站为条目页同时输出 TechArticle + FAQPage）。
+    if isinstance(jsonld, (list, tuple)):
+        ld = "".join('<script type="application/ld+json">%s</script>'
+                     % json.dumps(x, ensure_ascii=False) for x in jsonld if x)
+    else:
+        ld = ('<script type="application/ld+json">%s</script>'
+              % json.dumps(jsonld, ensure_ascii=False)) if jsonld else ""
     return f"""<!DOCTYPE html>
 <html lang="{LANG}">
 <head>
@@ -446,6 +452,54 @@ def foot_html():
             '数字以官方原文为准，引用前请回官方核对<br>'
             '联系董老师：微信 jack787300 / dxw22465 · 邮箱 kk2688@agent.qq.com</p>'
             % (VERSION, LASTMOD))
+
+
+def feedback_html(slug, page_label):
+    """条目页/聚合页底部的「留言给董老师」模块 + 阅读埋点。
+
+    **仅自有域名站启用**（--feedback；GitHub 站不注入——那里没有 /api/ 后端）。
+    复用服务器上既有的 /opt/kb/kb-api.py：POST /api/view 计数、POST /api/messages 留言，
+    留言同时进现有收件箱（pages.xinfide.com/inbox.html），不再另建一套。
+    计数键统一加 hg- 前缀，与既有知识库页面的 slug 命名空间隔离。
+    """
+    key = "hg-" + slug
+    label = html.escape(page_label, quote=True)
+    return """<section class="fb" data-slug="{key}" data-page="{label}">
+<style>
+.fb{{margin:28px 0 6px;padding:16px 18px;border:1px solid var(--surface-2,#E3E8EF);border-radius:12px;background:var(--surface,#fff);color:var(--ink,#0E1319)}}
+.fb-t{{margin:0 0 10px;font-size:1rem;font-weight:600}}
+.fb-i{{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:9px 11px;font:inherit;color:inherit;background:var(--bg,#F7F8FA);border:1px solid var(--surface-2,#E3E8EF);border-radius:8px}}
+.fb-i:focus{{outline:2px solid var(--brand,#0A56A8);outline-offset:1px}}
+.fb-row{{display:flex;align-items:center;gap:12px;flex-wrap:wrap}}
+.fb-b{{padding:9px 18px;font:inherit;color:#fff;background:var(--brand,#0A56A8);border:0;border-radius:8px;cursor:pointer}}
+.fb-m{{font-size:.84rem;opacity:.75}}
+</style>
+<p class="fb-t">这一条没讲清？留言给董老师</p>
+<form class="fb-form">
+<input class="fb-i" name="name" maxlength="40" placeholder="怎么称呼（可不填）" autocomplete="off">
+<input class="fb-i" name="contact" maxlength="80" placeholder="微信／邮箱（想收到回复再填）" autocomplete="off">
+<textarea class="fb-i" name="text" maxlength="2000" rows="3" required placeholder="你的问题，或者这一条里你觉得讲错的地方"></textarea>
+<div class="fb-row"><button class="fb-b" type="submit">提交留言</button><span class="fb-m" role="status"></span></div>
+</form>
+</section>
+<script>
+(function(){{
+  var box=document.querySelector('.fb'); if(!box) return;
+  var slug=box.getAttribute('data-slug'), page=box.getAttribute('data-page');
+  try{{fetch('/api/view',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{slug:slug}}),keepalive:true}});}}catch(e){{}}
+  var f=box.querySelector('form'), m=box.querySelector('.fb-m');
+  f.addEventListener('submit',function(ev){{
+    ev.preventDefault();
+    var d={{name:f.name.value,contact:f.contact.value,text:f.text.value,page:page}};
+    if(!d.text.trim()){{m.textContent='请先写点什么';return;}}
+    m.textContent='发送中…';
+    fetch('/api/messages',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(d)}})
+      .then(function(r){{return r.json();}})
+      .then(function(j){{ if(j && j.ok){{m.textContent='已送达，董老师会看到';f.reset();}} else {{m.textContent=(j&&j.error)||'没发出去，稍后再试';}} }})
+      .catch(function(){{m.textContent='网络不通，稍后再试';}});
+  }});
+}})();
+</script>""".format(key=key, label=label)
 
 
 # ── CSS / JS ───────────────────────────────────────────────────
@@ -1177,7 +1231,10 @@ def single_html(head, doc, chapters, ids, base, theme_css):
     return ext_links(h)
 
 
-def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
+def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None,
+          seo_map=None, feedback=False):
+    """seo_map/feedback 为 2026-10-10 WB2 新增（自有域名站 hkgui.xinfide.com 专用）。
+    不传时行为与旧版完全一致——CI 的 GitHub 站输出不受影响。"""
     global VERSION, LASTMOD, N_ENTRIES
     theme_css = THEMES[theme]["css"] if theme in THEMES else ""
     doc, chapters = parse(md_path)
@@ -1240,6 +1297,17 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
         return sidebar_html(active, chapters, pages_meta)
 
     foot = foot_html()
+
+    # ── 自有域名站专用：关键词映射（SEO 覆盖）+ 聚合页 + 统计留言 ──────
+    # 2026-10-10 WB2 加。单一来源 meta/seo-keywords.json；不传 seo_map 时以下全部为空，
+    # 输出与旧版一致（CI 的 GitHub 站即走这条）。
+    seo_entries = (seo_map or {}).get("entries", {}) if seo_map else {}
+    seo_hubs = (seo_map or {}).get("hubs", {}) if seo_map else {}
+    if seo_hubs:
+        hub_nav = ('<p class="hubnav">分类总览：%s</p>'
+                   % " · ".join('<a href="hub-%s.html">%s</a>' % (hs, h["k"])
+                                for hs, h in seo_hubs.items()))
+        foot = foot + hub_nav
 
     # 1) 首页：导读 + 章节导航
     intro_secs = []
@@ -1327,6 +1395,15 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
             article.append(render_fields(e, ids))
             article.append("</article>")
             # 2026-10-08 董老师定：去掉「上一篇/下一篇」与「同章其他条目」模块
+            seo = seo_entries.get(slug)
+            if seo and seo.get("hub") in seo_hubs:
+                hb = seo_hubs[seo["hub"]]
+                n_hub = sum(1 for x in seo_entries.values() if x.get("hub") == seo["hub"])
+                article.append('<p class="hubback">这一类还有别的条目：'
+                               '<a href="hub-%s.html">%s</a>（共 %d 条）</p>'
+                               % (seo["hub"], html.escape(hb["title"]), n_hub))
+            if feedback:
+                article.append(feedback_html(slug, "%s %s" % (e["id"], e["title"])))
             article.append(foot)
             article.append("</div>")
             title = "%s %s - %s" % (e["id"], e["title"], SITE_TITLE)
@@ -1348,8 +1425,65 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
                 "keywords": "香港留学,%s,%s,香港身份,香港插班,DSE,高才通,受养人"
                             % (ch["title"], e["title"]),
             }
+            ld_out = ld
+            if seo:
+                # 自有域名站：标题改「搜索问句 | 品牌名」；keywords 用关键词表；
+                # 并按 FAQPage 结构化输出（问答对形式最利于 AI 直接引用）。
+                title = "%s | %s" % (seo["t"], SITE_TITLE)
+                ld["keywords"] = ",".join([seo["k"]] + list(seo.get("lt", []))
+                                          + ["香港留学", "香港身份", SITE_TITLE])
+                ld_out = [ld, {
+                    "@context": "https://schema.org",
+                    "@type": "FAQPage",
+                    "inLanguage": LANG,
+                    "mainEntity": [{
+                        "@type": "Question",
+                        "name": seo["k"],
+                        "acceptedAnswer": {"@type": "Answer", "text": desc},
+                    }],
+                }]
             write("%s.html" % slug, title, desc, slug, "%s.html" % slug,
-                  sb(slug), "\n".join(article), ld)
+                  sb(slug), "\n".join(article), ld_out)
+
+    # 3.4) 聚合页（hub）× N（仅自有域名站）：承接分类大词，再分发给条目页
+    if seo_hubs:
+        for hslug, h in seo_hubs.items():
+            members = sorted([s for s, x in seo_entries.items() if x.get("hub") == hslug])
+            lis = []
+            for s in members:
+                e = entry_by_id.get(s.upper()) or entry_by_id.get(s)
+                label = ("%s %s" % (e["id"], e["title"])) if e else s.upper()
+                lis.append('<li><a href="%s.html">%s</a><span class="hubkw">%s</span></li>'
+                           % (s, html.escape(label), html.escape(seo_entries[s]["k"])))
+            hmain = ['<div class="wrap">']
+            hmain.append('<nav class="crumbs"><a href="index.html">首页</a>'
+                         ' <span class="sep">›</span> <span>%s</span></nav>'
+                         % html.escape(h["title"]))
+            hmain.append("<article>")
+            hmain.append("<h1>%s</h1>" % html.escape(h["title"]))
+            hmain.append('<p class="f-lede">%s</p>' % html.escape(h["desc"]))
+            hmain.append('<p>本类共 %d 条，逐条点开看官方依据。</p>' % len(members))
+            hmain.append('<ul class="hublist">%s</ul>' % "\n".join(lis))
+            hmain.append("</article>")
+            if feedback:
+                hmain.append(feedback_html("hub-%s" % hslug, h["title"]))
+            hmain.append(foot)
+            hmain.append("</div>")
+            hld = {
+                "@context": "https://schema.org",
+                "@type": "CollectionPage",
+                "name": h["title"],
+                "description": h["desc"],
+                "inLanguage": LANG,
+                "keywords": ",".join([h["k"]] + list(h.get("lt", []))),
+                "isPartOf": {"@type": "Book", "name": SITE_TITLE, "url": base},
+                "url": "%shub-%s.html" % (base, hslug),
+                "hasPart": [{"@type": "WebPage", "name": seo_entries[s]["t"],
+                             "url": "%s%s.html" % (base, s)} for s in members],
+            }
+            write("hub-%s.html" % hslug, "%s | %s" % (h["title"], SITE_TITLE), h["desc"],
+                  "hub-%s" % hslug, "hub-%s.html" % hslug, sb(None),
+                  "\n".join(hmain), hld)
 
     # 3.5) 单文件版 single.html（暖纸手册样式整本，随站更新；不入 sitemap、noindex）
     with io.open(os.path.join(out_dir, "single.html"), "w", encoding="utf-8") as f:
@@ -1359,6 +1493,7 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None):
     # 4) sitemap.xml
     urls = []
     for name in ["index.html", "part-1.html", "part-2.html", "part-4.html", "part-5.html"] \
+            + [("hub-%s.html" % hs) for hs in seo_hubs] \
             + [e["id"].lower() + ".html" for ch in chapters for e in ch["entries"]]:
         urls.append("  <url><loc>%s%s</loc><lastmod>%s</lastmod></url>"
                     % (base, name, LASTMOD))
@@ -1474,7 +1609,22 @@ if __name__ == "__main__":
     ap.add_argument("--ai-dir", default=None,
                     help="项目既有站点产物目录（含 llms.txt/llms-full.txt/robots.txt/book.html/md/"
                          "与 entry-HK-*.html），并入本站并生成旧 URL 别名。CI 里传 site-ai。")
+    ap.add_argument("--seo-map", default=os.environ.get("SITE_SEO_MAP") or None,
+                    help="关键词映射表 JSON（meta/seo-keywords.json）。传入即启用自有域名站模式："
+                         "条目页用搜索问句标题 + FAQPage JSON-LD，并生成聚合页 hub-*.html。"
+                         "不传＝旧行为（CI 的 GitHub 站不传）。")
+    ap.add_argument("--feedback", action="store_true",
+                    help="在条目页/聚合页注入留言与阅读埋点模块（需站点有 /api/ 后端，"
+                         "即自有域名站；GitHub 站不要开）。")
     a = ap.parse_args()
-    build(a.md, a.out, a.base, a.theme, a.ai_dir)
+    seo_map = None
+    if a.seo_map:
+        import codecs
+        with codecs.open(a.seo_map, encoding="utf-8") as f:
+            seo_map = json.load(f)
+        print("  关键词表：%s（%d 条 / %d 个聚合页）"
+              % (os.path.basename(a.seo_map), len(seo_map.get("entries", {})),
+                 len(seo_map.get("hubs", {}))))
+    build(a.md, a.out, a.base, a.theme, a.ai_dir, seo_map, a.feedback)
     if a.theme in THEMES:
         print("  主题：%s（%s）" % (THEMES[a.theme]["name"], THEMES[a.theme]["note"]))
