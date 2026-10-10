@@ -39,7 +39,7 @@ import markdown
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STYLE = os.path.join(ROOT, "assets", "book-style.html")
 DEFAULT_DRAFT = os.path.join(ROOT, "release", "定稿-董老师香港留学指南.md")
-TITLE = "董老师香港留学指南"
+TITLE = "董老师香港留学指南2026"
 
 # 旧稿里可能残留的显式分页符（判例 27 起源文件不再写；这里只做兼容与兜底）
 RE_PAGEBREAK = re.compile(r'<div style="page-break-after: always;"></div>')

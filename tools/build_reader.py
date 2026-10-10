@@ -45,7 +45,7 @@ BOOK = os.path.join(ROOT, "book")
 META = os.path.join(ROOT, "meta")
 SITE = "https://kk2688qq.github.io/dong-hk-guide"
 REPO = "https://github.com/kk2688qq/dong-hk-guide"
-BOOK_TITLE = "董老师香港留学指南"
+BOOK_TITLE = "董老师香港留学指南2026"
 
 RE_TITLE = re.compile(r"^#\s+(HK-\d{3})\s+(.+?)\s*$")
 RE_RISK = re.compile(r"<!--\s*风险\s*=\s*(\S+)\s+阶段\s*=\s*(\S+)\s+焦虑\s*=\s*(\S+?)\s*-->")

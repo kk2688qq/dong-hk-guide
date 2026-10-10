@@ -26,7 +26,7 @@ DEFAULT_MD = os.path.join(os.path.dirname(HERE), "香港留学指南-书稿", "�
 
 # 站点根 URL（canonical / sitemap 用）。CI 里传 SITE_BASE_URL，与仓库 build_site.py 同一变量名。
 BASE = (os.environ.get("SITE_BASE_URL") or "https://kk2688qq.github.io/dong-hk-guide").rstrip("/") + "/"
-SITE_TITLE = "董老师香港留学指南"
+SITE_TITLE = "董老师香港留学指南2026"
 # 条目数：**由定稿实际解析结果写入**（单一来源，勿在此硬编码第二份）。
 # 2026-10-09 修：此处及全文件原有 6 处硬编码「49 条」，书稿 49→67 后站点会
 # 一边宣称「49 条」一边列出 67 条——与文件自身「版本/更新时间从定稿解析」同一原则。
@@ -293,7 +293,7 @@ def sidebar_html(active, chapters, pages_meta):
 
     out = []
     out.append('<a class="brand" href="index.html">')
-    out.append('<span class="brand-t">董老师香港留学指南</span>')
+    out.append('<span class="brand-t">董老师香港留学指南2026</span>')
     out.append('<span class="brand-s">%s · %d 条 · 可核回官方原文</span>'
                % (VERSION, N_ENTRIES))
     out.append("</a>")
@@ -356,7 +356,7 @@ def page_shell(title, desc, slug, canonical_path, sidebar, main_html,
 <a class="skip" href="#main">跳到主要内容</a>
 <header class="topbar">
   <button id="menubtn" aria-label="打开目录" aria-expanded="false" aria-controls="sidebar">☰ 目录</button>
-  <a class="topbar-t" href="index.html">董老师香港留学指南</a>
+  <a class="topbar-t" href="index.html">董老师香港留学指南2026</a>
   <button id="themebtn" aria-label="切换深浅色" aria-pressed="false">◐</button>
 </header>
 <div class="backdrop" id="backdrop" hidden></div>
@@ -441,7 +441,7 @@ def entry_desc(entry):
 
 def foot_html():
     """全站统一页脚（多页站与单文件版共用，同一事实只许一处实现）。"""
-    return ('<p class="pfoot">《董老师香港留学指南》%s · 最后更新 %s<br>'
+    return ('<p class="pfoot">《董老师香港留学指南2026》%s · 最后更新 %s<br>'
             '内容采用 CC BY-NC-SA 4.0（可转载、需署名、不得商用）<br>'
             '数字以官方原文为准，引用前请回官方核对<br>'
             '联系董老师：微信 jack787300 / dxw22465 · 邮箱 kk2688@agent.qq.com</p>'
