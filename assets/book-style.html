@@ -23,25 +23,25 @@ em { font-style: normal; background: linear-gradient(transparent 62%, #ffe9a8 62
 
 /* ---------- 书名与目录 ---------- */
 h1.title {
-  text-align: center;
+  text-align: left;
   font-size: 2em;
   line-height: 1.4;
   margin: .4em 0 .1em;
   border: 0;
   padding: 0;
 }
-p.subtitle { text-align: center; color: #6b7686; margin: 0 0 1.6em; }
+p.subtitle { text-align: left; color: #6b7686; margin: 0 0 1.6em; }
 
 /* 封面区（书名 → 联系方式，到第一条分割线为止）：整块居中。
    打印时独占首页、**内部任何标题都不许再分页**——否则封面会被拆成
    「书名一页 + 副题一页」（2026-10-08 实测踩过，两版 PDF 都中招）。 */
-.cover { text-align: center; }
+.cover { text-align: left; }
 .cover h1, .cover h2 { page-break-before: avoid; break-before: auto; }
 .cover h1 { border: 0; padding: 0; margin: .3em 0 .1em; font-size: 2em; line-height: 1.4; }
 .cover h2 { border: 0; padding: 0; margin: 0 0 1em; font-size: 1.28em; color: #6b7686; font-weight: 600; }
-.cover p { text-align: center; }
+.cover p { text-align: left; }
 @media print {
-  .cover { page-break-after: always; break-after: page; margin-top: 20%; }
+  /* 2026-10-09 董老师定：全文取消强制分页，开头不再是「封面页」 */
 }
 
 nav#TOC {
@@ -66,9 +66,8 @@ nav#TOC ul {
   columns: 2;
   column-gap: 42px;
 }
-/* 目录三层：部分（lv1）/ 章（lv2）/ 条目（lv3）。2026-10-08 起目录列到**全部条目**
-   （当前 67 条；条数不在此处硬编码，由 tools/build_release.py 按标题级别过滤生成，
-   条目内部的小节不列）。 */
+/* 目录三层：部分（lv1）/ 章（lv2）/ 条目（lv3）。2026-10-08 起目录列到 49 条，
+   结构由 tools/build_release.py 按标题级别过滤生成（条目内部的小节不列）。 */
 nav#TOC li { break-inside: avoid; margin: .1em 0; font-size: .9em; line-height: 1.6; }
 nav#TOC li.lv1 { font-weight: 700; margin: .85em 0 .25em; font-size: .97em; }
 nav#TOC li.lv1 > a { color: #12406e; }
@@ -203,8 +202,7 @@ li { margin: .3em 0; }
      规则：目录页 + 每个章节级标题各自另起一页——等价于原先「每个标题前一个
      显式分页符」的观感；封面（第一个 h1）不另起页。
      只在打印 / PDF 生效，屏幕阅读与 EPUB 不受影响。 */
-  nav#TOC { page-break-before: always; break-before: page; }
-  h1, h2, h3 { page-break-before: always; break-before: page; }
+  /* 2026-10-09 董老师定：全文取消强制分页（原「目录页 + 每个标题另起一页」作废） */
   /* 封面不受「标题另起一页」约束：书名与副题必须同页（封面整体由
      .cover 的 page-break-after 收尾）。 */
   .cover h1, .cover h2, h1:first-of-type { page-break-before: avoid; break-before: auto; }
@@ -212,9 +210,7 @@ li { margin: .3em 0; }
   /* 每个部分/章/条目已各自另起一页，条目间的 <hr> 没有视觉功能；
      留着它会在上一页排满时掉到新页、再被标题的强制分页顶成一张
      空白页（2026-10-08 实测：第 143 页整页空白）。屏幕阅读不受影响。 */
-  hr { display: none; }
-  /* 兜底：万一正文里又写回了显式分页符，仍按「其后另起一页」处理 */
-  div[style*="page-break"] { page-break-after: always; break-after: page; }
+  hr { display: block; }
   a { color: #0b5cad; }
 }
 </style>
