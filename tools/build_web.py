@@ -1235,11 +1235,15 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None,
           seo_map=None, feedback=False):
     """seo_map/feedback 为 2026-10-10 WB2 新增（自有域名站 hkgui.xinfide.com 专用）。
     不传时行为与旧版完全一致——CI 的 GitHub 站输出不受影响。"""
-    global VERSION, LASTMOD, N_ENTRIES
+    global VERSION, LASTMOD, N_ENTRIES, BASE
     theme_css = THEMES[theme]["css"] if theme in THEMES else ""
     doc, chapters = parse(md_path)
     if not base.endswith("/"):
         base += "/"
+    # 2026-10-11 修：--base 只进了局部变量，全局 BASE（breadcrumb JSON-LD 用）
+    # 仍指向 github.io 默认值——导致自有域名站 73/79 页 BreadcrumbList 与 canonical
+    # 域名互相矛盾。此处统一回写，canonical / JSON-LD / sitemap 单一来源。
+    BASE = base
     # 版本/更新时间取自定稿正文（单一来源；取到就用，取不到保留默认值）
     raw_md = io.open(md_path, encoding="utf-8").read()
     mv, ml = RE_SRC_VERSION.search(raw_md), RE_SRC_LASTMOD.search(raw_md)
@@ -1327,7 +1331,7 @@ def build(md_path, out_dir, base=BASE, theme="default", ai_dir=None,
                               % (html.escape(s["title"]), link_refs(md2html(body), ids)))
     intro_html = "\n".join(intro_secs) or link_refs(md2html(clean_lines(doc["intro"])), ids)
     hero = """<div class="hero">
-<h1>董老师香港留学指南</h1>
+<h1>""" + SITE_TITLE + """</h1>
 <p class="tagline">中学插班 · 本科申请 · 本科申硕 · 身份规划 · 费用预算 · 防骗打假</p>
 <div class="vers">
 <span class="chip c-low">%s</span><span class="chip">%d 条收录</span>
