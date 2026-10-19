@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>知乎 10 篇成品 · 依据《董老师香港留学指南 2026》</title>
+<style>
+  :root{--bg:#f6f5f2;--paper:#fff;--ink:#1d1d1f;--sub:#6b6b70;--line:#e6e3dd;--red:#c0392b;--blue:#1f5f8b;--gold:#b8860b;--green:#2e7d5b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif;line-height:1.9;font-size:16px;-webkit-font-smoothing:antialiased}
+  .bar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .bar .t{font-weight:700;font-size:15px;margin-right:auto;letter-spacing:.5px}
+  .bar .t small{font-weight:400;color:var(--sub);margin-left:8px;letter-spacing:0}
+  button{font-family:inherit;font-size:13px;padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:.15s}
+  button:hover{border-color:#c9c4ba;background:#faf9f6}
+  button.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  button.primary:hover{background:#333}
+  button.done{background:var(--green);color:#fff;border-color:var(--green)}
+  .wrap{max-width:880px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:26px;line-height:1.45;margin:6px 0 8px;letter-spacing:-.3px}
+  .lead{color:var(--sub);font-size:14px;margin:0 0 22px}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:22px}
+  .panel h2{font-size:15px;margin:0 0 12px;letter-spacing:.5px}
+  .panel ul{margin:0;padding-left:20px;font-size:14.5px;color:#3a3a3e}
+  .panel li{margin:5px 0}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .toc a{display:inline-block;font-size:13px;padding:6px 11px;border-radius:999px;background:#fff;border:1px solid var(--line);color:#3a3a3e;text-decoration:none}
+  .toc a:hover{border-color:#b9b3a7;background:#faf9f6}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:26px 26px 18px;margin-bottom:24px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .no{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#9a9488;letter-spacing:1px}
+  .tag{font-size:11.5px;padding:3px 9px;border-radius:999px;border:1px solid}
+  .tag.hot{color:var(--red);border-color:#e8c4bf;background:#fdf3f2}
+  .tag.dec{color:var(--blue);border-color:#c6d8e5;background:#f2f7fa}
+  .tag.adv{color:var(--gold);border-color:#e8dcb8;background:#fdf8ea}
+  .tag.gd{color:#7a7466;border-color:#e6e3dd;background:#faf8f4}
+  .q{font-size:19px;font-weight:700;line-height:1.6;margin:0 0 18px;letter-spacing:-.2px}
+  .answer{border-top:1px dashed var(--line);padding-top:18px}
+  .answer h3{font-size:16px;margin:22px 0 8px;color:#111}
+  .answer h3:first-child{margin-top:0}
+  .answer p{margin:0 0 13px}
+  .answer strong{font-weight:700;background:linear-gradient(transparent 62%,#fdf0c9 62%)}
+  .answer ul,.answer ol{margin:0 0 13px;padding-left:22px}
+  .answer li{margin:6px 0}
+  .answer table{width:100%;border-collapse:collapse;margin:14px 0 16px;font-size:14.5px}
+  .answer th,.answer td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  .answer th{background:#faf8f4;font-weight:600;font-size:13.5px;color:#4a463d}
+  .answer blockquote{margin:14px 0;padding:10px 14px;background:#f7f6f2;border-left:3px solid #d8d2c4;color:#3a3a3e;font-size:14.5px;border-radius:0 6px 6px 0}
+  .foot{display:flex;gap:10px;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .foot .n{font-size:12.5px;color:#a29b8e;margin-left:auto}
+  @media print{.bar,.foot,.toc{display:none}body{background:#fff}.card{break-inside:avoid;box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="t">知乎 10 篇成品<small>依据《董老师香港留学指南 2026》· 2026-10-19</small></div>
+  <button class="primary" onclick="copyAll(this)">复制全部答案</button>
+  <button onclick="window.print()">打印 / 存 PDF</button>
+</div>
+<div class="wrap">
+  <h1>10 篇可直接发布的知乎答案</h1>
+  <p class="lead">每条都从指南的一条长出来：官方原文 + 硬数字 + 常见误传。开头 40–60 字给结论，结尾是作者介绍，全文不含任何联系方式。</p>
+
+  <div class="panel">
+    <h2>发布规则（比内容更重要）</h2>
+    <ul>
+      <li><b>一天最多 1 篇</b>，固定时间发（12:00 或 20:00）。同日同分钟批量发布是最大的限流嫌疑。</li>
+      <li><b>顺序 1→2→3</b> 连发三天起量，第 4 天插 4，之后交替。</li>
+      <li><b>发布前先搜该题</b>：若题下已有 800+ 赞答案，开头 40 字要更狠。</li>
+      <li><b>知乎正文不放</b>微信号、二维码、外链，不写「领取」「私信获取」。</li>
+    </ul>
+  </div>
+
+  <div class="toc"><a href="#t01">01 香港城市大学退出统招，202</a><a href="#t02">02 非本地生学额从 20% 提到</a><a href="#t03">03 港澳台侨联考「400 分上 </a><a href="#t04">04 住深圳、每天过关去香港上学，</a><a href="#t05">05 香港中学的「Band 1 名</a><a href="#t06">06 「先降一级插班」在香港为什么</a><a href="#t07">07 一年制港硕到底多少钱？先把学</a><a href="#t08">08 双非本科能申港硕吗？官方根本</a><a href="#t09">09 孩子现在读中几，最晚什么时候</a><a href="#t10">10 「办身份必须买港险」「收益 </a></div>
+
+  <section class="card" id="t01">
+    <div class="meta"><span class="no">01</span><span class="tag hot">争议·时效</span>
+      <span class="tag gd">对应指南 HK-042</span><span class="tag gd">第1天</span></div>
+    <h2 class="q">香港城市大学退出统招，2026/27 起不再参加统招，意味着什么？</h2>
+    <div class="answer">
+<p><strong>先说结论：香港城市大学已从 2026/27 学年起，改用「中国内地高考单独招生」，不再参与内地统招。</strong>这件事直接影响三件事：不占你的统招志愿、要你自己上城大官网递申请、一旦确认接受录取并缴留位费，你就不再具内地统招资格——这一步退不回来。</p>
+<h3>官方原文是怎么写的</h3>
+<p>城大 2025 年 9 月 25 日新闻稿的原话：</p>
+<blockquote>「由 2026/27 学年起，将透过『中国内地高考单独招生』机制，独立招收中国内地应届高考生，不再参与『全国普通高等学校统一招生计划（统招）』……有关招生政策之调整，已获中国内地相关部门正式批准。」</blockquote>
+<p>注意最后半句：这项调整是<strong>已获内地相关部门批准</strong>的，不是学校自己改的，所以不会「明年又改回去」。</p>
+<h3>三件直接影响你的事</h3>
+<p><strong>第一，申请阶段不占统招志愿。</strong>城大招生网写明「不占统招志愿」，你在城大官网报名，和你在内地填志愿互不冲突。</p>
+<p><strong>第二，要自己递申请，没人替你填。</strong>申请期是跨年度的长周期。官网现行公布的 2027/28 入学时间表是：</p>
+<table><tr><th>节点</th><th>日期</th></tr>
+<tr><td>开始申请</td><td>2026-09-24</td></tr>
+<tr><td>截止申请</td><td>2027-06-13</td></tr>
+<tr><td>高考放榜 / 上传成绩</td><td>2027 年 6 月下旬</td></tr>
+<tr><td>公布结果</td><td>2027 年 6 月下旬至 7 月上旬</td></tr>
+</table>
+<p><strong>第三，确认录取是不可逆的。</strong>官方原文：「获录取的申请人完成确认接纳录取及缴付留位费后，港城大会将其资料上交至省招办及教育部，而申请人将不再具参与中国内地统招的资格。」</p>
+<p>这句话要读两遍：<strong>申请不占志愿，但接受录取就等于放弃统招。</strong>两步是两件事，别混在一起。</p>
+<h3>门槛是多少</h3>
+<p>官方基本入学要求：应届高考实际成绩（不含任何加分）<strong>最少达到本科第一批重点大学录取分数线（一本线／特殊类型招生控制分数线）</strong>，且<strong>英语 110 分或以上（150 分满分）</strong>。</p>
+<p><strong>这是最低要求，不是录取线。</strong>官方另注：除高考成绩外，还会综合评估申请资料、面试表现（如适用）等因素，择优录取。任何把它说成「110 分就能进」的，都是把门槛当成了结果。</p>
+<h3>几个数字，给你一个量级</h3>
+<ul><li>2025/26 学年，城大透过统招共录取<strong>约 300 名</strong>内地学生。</li><li>2027/28 学年非本地生学费：官方标注<strong>每学年 HK$240,000</strong>；兽医学课程 <strong>HK$400,000</strong>。</li><li>招生名额：官方写「以择优方式录取，<strong>各省市不设名额上下限</strong>」。</li></ul>
+<h3>红线提醒</h3>
+<ul><li><strong>别把「不占志愿」和「放弃统招」混为一谈。</strong>前者是申请阶段，后者发生在你确认录取并缴费之后。</li><li><strong>别把英语 110 分当录取线。</strong>那是最低入学要求。</li><li><strong>别信中介「包办城大申请」。</strong>城大官方严正声明：<strong>没有委托任何人士或中介机构</strong>代为招收或录取中国内地本科生。</li><li><strong>年份要看清楚。</strong>2026 年 9 月开始申请的那一轮，是 <strong>2027/28 学年入学</strong>，不是 2026 年入学。</li></ul>
+<h3>三个常见误传</h3>
+<p><strong>「城大不再招内地生了」</strong>——错。是换招生方式，仍面向内地应届高考生。</p>
+<p><strong>「填了城大就不能填内地志愿」</strong>——申请阶段不占统招志愿。只有确认接受录取并缴留位费后，才会失去统招资格。</p>
+<p><strong>「城大退出统招，统招里就没有香港的大学了」</strong>——官方没有这个表述。港中大仍走统招提前批，官方原文写明高考生不需直接向学校申请，只需在提前批次填报志愿，且不设面试。</p>
+<h3>谁该看这一条</h3>
+<p>准备用高考成绩申港校、正在排志愿顺序的家庭；听说「城大退出统招」但不确定含义的家长；已经在城大官网填过表、想确认后果的学生。</p>
+<p><strong>这件事最贵的错法不是填错，是把「多一个机会」当成「少一条退路」，在没搞清楚之前就点了确认录取。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-042 条，官方口径取自香港城市大学新闻稿（2025-09-25）、城大中国内地本科招生网与报考须知。政策与日期逐年更新，以官方最新公布为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1547 字</span></div>
+  </section>
+  <section class="card" id="t02">
+    <div class="meta"><span class="no">02</span><span class="tag hot">争议·祛魅</span>
+      <span class="tag gd">对应指南 HK-041</span><span class="tag gd">第2天</span></div>
+    <h2 class="q">非本地生学额从 20% 提到 50%，名额变多了，为什么反而更卷？</h2>
+    <div class="answer">
+<p><strong>先说结论：名额确实放开了两次，但官方在同一批文件里还写了一句更关键的话——措施推出后，八所教资会资助大学的非本地生申请数目，按年录得双位数增幅。</strong>名额是分母，申请人数是分子。分母变大，分子涨得更快，结果就是「更卷」。</p>
+<h3>先把政策本身说准</h3>
+<ul><li><strong>2024/25 学年起</strong>：政府资助专上院校非本地学生限额（适用<strong>授课课程</strong>），由相当于本地学生学额的 <strong>20% 提升一倍至 40%</strong>。</li><li><strong>2026/27 学年起</strong>：再由 <strong>40% 提升至 50%</strong>；同时把资助研究院研究课程的超额收生自资学额上限，由 <strong>100% 提升至 120%</strong>。</li></ul>
+<p>这两次调整都有官方原文：一次是教育局局长在立法会的政策简报会发言（2023-11-07），一次是教资会欢迎 2025 年施政报告的新闻稿（2025-09-17）。</p>
+<h3>官方自己给的两个事实</h3>
+<table><tr><th>事实</th><th>官方怎么说</th></tr>
+<tr><td>名额在放开</td><td>20% → 40%（2024/25）→ 50%（2026/27），仅适用授课课程</td></tr>
+<tr><td>申请在暴增</td><td>「措施推出后，八所教资会资助大学的非本地学生申请数目按年录得双位数增幅」</td></tr>
+</table>
+<p>所以「更卷」不是我编的结论，但我必须标清楚：<strong>「更卷」是依这两个官方事实推出的判断，不是官方口径。</strong>官方文件里没有「更卷」这个词，也没有公布录取率。</p>
+<h3>官方没有公布的，比公布的重要</h3>
+<ul><li><strong>各校非本地生实际收生数</strong>：没有逐校公布。</li><li><strong>录取率</strong>：没有任何一年、任何一校公布过。</li><li><strong>非本地生里内地与海外的拆分人数</strong>：本条不使用任何拆分数字。</li></ul>
+<p>这意味着：你在网上看到的所有「港校非本地生录取率 XX%」，来源都不是官方。别拿它做决策。</p>
+<h3>三个容易被带偏的地方</h3>
+<p><strong>第一，上限不等于实际收满。</strong>50% 是<strong>上限</strong>，官方口径是院校「因应本身条件，循序渐进」。上限决定赛道有多宽，不决定你跑第几。</p>
+<p><strong>第二，非本地生不等于内地生。</strong>官方目标是吸引海外（尤其「一带一路」国家）和内地学生，两拨人<strong>共用同一个上限</strong>。</p>
+<p><strong>第三，本地生学额没有被挤占。</strong>官方明文：本地生 <strong>1.5 万个资助学额维持不减</strong>；非本地生以<strong>超额收生</strong>形式录取，学费至少收回额外直接成本，<strong>不用公帑补贴</strong>。</p>
+<h3>红线提醒</h3>
+<ul><li><strong>别把「上限 50%」读成「录取变容易」。</strong></li><li><strong>别信「本地生学位被抢了」</strong>——官方否认，且制度上非本地生不占资助学额。</li><li><strong>别把「非本地生」等同于「内地生」。</strong></li><li><strong>别忽略「授课课程」这个限定</strong>——研究院研究课程走的是另一条线（100% → 120%）。</li></ul>
+<h3>那到底该怎么判断难不难</h3>
+<p><strong>别看上限，看三样：</strong>目标课程的入学要求、你自己在申请池里的位置、以及这所学校当年的实际收生节奏。官方没给录取率，但每所学校都公布了入学要求——那才是你能对得上的东西。</p>
+<h3>常见误传</h3>
+<p><strong>「名额翻倍，录取率也翻倍」</strong>——错。官方同时给了「申请双位数增长」这个前提。</p>
+<p><strong>「非本地生抢了本地生的学位」</strong>——官方明确否认，并写明非本地生须超额收生、自费、不用公帑。</p>
+<p><strong>「上限 50%，就是一半学生是非本地生」</strong>——上限是上限。教育局局长在立法会提到上一年实际约占两成至三成，但那是<strong>媒体转述、官方逐字记录未核到</strong>，本条不把它当官方数字用。</p>
+<p><strong>「这是专门给内地学生的政策」</strong>——官方表述是海外与内地学生共用同一限额。</p>
+<h3>谁该看这一条</h3>
+<p>正在判断「港校到底好不好考、政策往哪走」的家长；看到「名额翻倍」类宣传后想核实的家庭。</p>
+<p><strong>名额放开是真的，竞争变强也是真的。这两句话同时成立，才是这条政策的完整样子。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-041 条，官方口径取自教育局立法会政策简报会发言（2023-11-07）、教资会新闻稿（2025-09-17）、立法会教育事务委员会政策文件（2025-10-03）。上限按学年调整，以当年官方公布为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1530 字</span></div>
+  </section>
+  <section class="card" id="t03">
+    <div class="meta"><span class="no">03</span><span class="tag hot">争议·祛魅</span>
+      <span class="tag gd">对应指南 HK-043</span><span class="tag gd">第3天</span></div>
+    <h2 class="q">港澳台侨联考「400 分上 985」，是真的吗？</h2>
+    <div class="answer">
+<p><strong>先说结论：「港澳台侨联考」真实存在，官方叫「全国联招」，有香港身份也确实能报名。但「400 分上 985」是假的——2026 年本科普通类线是文史 430、理工 445；部分院校执行的高分线是文史 515、理工 535。400 分连第一档都不到。</strong></p>
+<h3>官方对港澳考生，只看两样</h3>
+<p>联招办 2026 年简章原文，港澳地区考生的报名条件是：</p>
+<blockquote>①《港澳居民来往内地通行证》或《港澳居民居住证》； ② 香港或澳门居民身份证。</blockquote>
+<p><strong>没有居港年限要求。</strong>这一点是真的，也是很多话术借用的地方——「你看，连住多久都不看」。</p>
+<p>但「报得上」和「录得上」是两件事。</p>
+<h3>分数线的真实结构</h3>
+<p>官方每年 6 月下旬由广东省教育考试院公布录取最低控制分数线。近四年本科普通类（文史／理工，括号内为同年高分线）：</p>
+<table><tr><th>年份</th><th>普通类线</th><th>高分线</th></tr>
+<tr><td>2023</td><td>360 / 380</td><td>460 / 480</td></tr>
+<tr><td>2024</td><td>365 / 390</td><td>465 / 510</td></tr>
+<tr><td>2025</td><td>430 / 460</td><td>510 / 560</td></tr>
+<tr><td>2026</td><td><strong>430 / 445</strong></td><td><strong>515 / 535</strong></td></tr>
+</table>
+<p>看完这张表，「400 分上 985」这句话就不成立了：<strong>2026 年 400 分连普通类本科线都够不到。</strong></p>
+<h3>「过线」也只是有资格被投档</h3>
+<p>官方简章原文：</p>
+<blockquote>「高校根据考生考试成绩、志愿及本校招生计划、录取要求，在联招办划定的最低录取控制分数线以上<strong>择优录取</strong>新生。」</blockquote>
+<p>最低控制分数线是<strong>投档门槛</strong>，不是录取线。而且官方设了平行志愿（本科批 A–J 十个院校志愿），还公开征集志愿与缺额计划——<strong>有缺额，就说明有上了线却没被录取的考生。</strong></p>
+<h3>真实录取规模</h3>
+<p>官方公布的本科批次录取人数：</p>
+<ul><li>2023 年：<strong>4,688 人</strong></li><li>2024 年：<strong>5,790 人</strong></li><li>2025 年：<strong>6,238 人</strong></li></ul>
+<p>注意：官方公布的是<strong>绝对人数</strong>，<strong>从不公布录取率</strong>，也不公布各校在联招中的实际录取分。网上所有「985 录取率 8.2%」这类数字，来源都不是官方。</p>
+<h3>官方自己点名的骗局</h3>
+<p>广东省教育考试院在 2026 年志愿填报说明里写得很直白：</p>
+<blockquote>「切勿轻信『招生人士内部指标』『大数据精准指导』『花钱就能上名校』等招生骗局。」</blockquote>
+<p>这不是我的判断，是官方原文。所以任何跟你说「有内部名额」的，不用再讨论专业度，直接结束对话。</p>
+<h3>时间线（2026 年）</h3>
+<table><tr><th>环节</th><th>时间</th></tr>
+<tr><td>报名</td><td>3 月 1–31 日（3 月 1–15 日网上报名，3 月 11–31 日确认）</td></tr>
+<tr><td>考试</td><td>5 月 23–24 日</td></tr>
+<tr><td>公布成绩</td><td>6 月 21 日</td></tr>
+<tr><td>填报志愿</td><td>6 月 27–30 日</td></tr>
+<tr><td>录取</td><td>7 月 1 日开始，7 月 10 日结束</td></tr>
+</table>
+<p>考试结构：每科 150 分，总分 750 分（2026 年起使用第 4 版考试大纲）。这套日程与高考、DSE 并行，<strong>要提前一年以上规划</strong>，不是临时能换的赛道。</p>
+<h3>常见误传</h3>
+<p><strong>「400 分上 985」</strong>——与官方分数结构直接冲突，400 分连普通类线都不到。</p>
+<p><strong>「联考分数线低，等于上好大学容易」</strong>——官方写的是「线上择优录取」。门槛低不等于录取容易，这两件事被话术合并成了一件。</p>
+<p><strong>「过了线就有学上」</strong>——有征集志愿和缺额计划，说明并非如此。</p>
+<p><strong>「有香港身份就低分上名校」</strong>——半真。真的是报名只看两证、不看居留年限；假的是录取仍要择优。话术把「报得上」偷换成了「录得上」。</p>
+<p><strong>「中介有内部名额」</strong>——官方已把这句话列为招生骗局。</p>
+<h3>谁该看这一条</h3>
+<p>正在考虑「办香港身份让孩子回内地读大学」的家长；被「400 分上 985」打动的家庭；想弄清联考和高考、DSE 是什么关系的家庭。</p>
+<p><strong>身份解决的是「能不能报」，分数和择优解决的是「录不录」。把这两件事分开，你就不会被任何一条话术带走。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-043 条，官方口径取自联招办 2026 年简章、广东省教育考试院 2026 年录取最低分数线通知（联招〔2026〕20 号）与志愿填报说明。分数线年年重划，以当年公布为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1632 字</span></div>
+  </section>
+  <section class="card" id="t04">
+    <div class="meta"><span class="no">04</span><span class="tag hot">争议·家长最关心</span>
+      <span class="tag gd">对应指南 HK-037</span><span class="tag gd">第4天</span></div>
+    <h2 class="q">住深圳、每天过关去香港上学，算不算「居港」？</h2>
+    <div class="answer">
+<p><strong>先说结论：官方没有把「住深圳、每天过关上学」定为不合资格。</strong>联招的居港规定给了两条替代路径：①孩子在教育局认可的港校以<strong>全日制学生</strong>身份就读，跨境走读<strong>不改变</strong>这个身份；②提交<strong>出入境纪录证明</strong>，显示该期间<strong>每年不多于 90 天不在香港</strong>。两条符合其一即可。</p>
+<p><strong>但有一件事必须说清楚：官方页面没有定义「即日来回」怎么计入「不在港天数」。</strong>这一点不要听中介、也不要自己推断，必须向联招处／入境处确认。</p>
+<h3>官方的两条路径，原文是这样</h3>
+<p><strong>(a) 全日制就读。</strong>官方要求「以全日制学生身份在教育局认可于本港开办正规课程的学校就读」。<strong>跨境走读本身，不改变「全日制学生」这个身份。</strong></p>
+<p><strong>(b) 出入境纪录证明。</strong>以向入境处付费申领的出入境纪录为准，显示「在该段两年期内，每年不多于 90 天不在香港」。</p>
+<p>认可的学校分三档：</p>
+<ol><li>官立中学、资助中学及私立中学（<strong>日校</strong>，<strong>不包括夜校和其他学校</strong>）；</li><li>直接资助计划（直资）学校；</li><li>国际学校、私立独立学校及提供非本地课程的直资学校。</li></ol>
+<h3>时间节点逐年不同，这是最容易算错的地方</h3>
+<table><tr><th>联招年度</th><th>居港要求</th><th>指定完成入学日期</th><th>出入境纪录涵盖期间</th></tr>
+<tr><td>2026 年度</td><td><strong>无居港规定</strong></td><td>—</td><td>—</td></tr>
+<tr><td>2027 年度</td><td>一年期（过渡）</td><td><strong>2026-09-15</strong>（已过）</td><td>2026-06-01 至 2027-05-31，≤90 天不在港</td></tr>
+<tr><td>2028 年度起</td><td>两年期</td><td><strong>2026-09-15 及 2027-09-15</strong></td><td>2026-06-01 至 2028-05-31，<strong>每段一年</strong>分别核算</td></tr>
+</table>
+<p>2027 年度那份出入境纪录证明的截止日期是 <strong>2027-05-31</strong>。</p>
+<h3>三个必须核对的前提</h3>
+<ol><li>孩子<strong>首次</strong>获签发受养人签证／进入许可证时，是否<strong>未满 18 岁</strong>；</li><li>就读学校是否在<strong>教育局认可名单</strong>内、是否<strong>全日制</strong>；</li><li>目标联招年度看的是<strong>一年</strong>还是<strong>两年</strong>。</li></ol>
+<h3>红线提醒</h3>
+<ul><li><strong>「每天过关算不算不在港」，官方没有定义。</strong>出入境纪录量的是「不在香港的天数」，而「即日来回」怎么计，官方页面没写。这一条我明确不下结论——请向教育局高等教育分部（联招处咨询）核实。</li><li><strong>别以为「住深圳＝自动不合资格」。</strong>官方给的是两条替代路径，没有这条排除。</li><li><strong>别以为「跨境就一定合规」。</strong>(a) 要全日制 + 认可学校；(b) 要每年不超过 90 天不在港，两条都要真的对得上。</li><li><strong>别错过硬日期。</strong>2028 年度起有两个指定日期，错过就没有补救窗口。</li><li><strong>别在过关记录或就读证明上动手脚。</strong>使用虚假文书、虚假陈述属刑事罪行。</li></ul>
+<h3>常见误传</h3>
+<p><strong>「港府新规禁止跨境生读港校」</strong>——错。官方公示的是<strong>联招申请资格的居港规定</strong>，给的是全日制就读或 90 天两条替代路径，没有排除跨境走读。</p>
+<p><strong>「必须住在香港，每天过关不行」</strong>——官方没有这个要求。「住满」不是官方用语。</p>
+<p><strong>「住深圳就算不在香港，几天就超 90 天」</strong>——这正是需要核实的一点，不是定论。官方未定义即日来回如何计入。</p>
+<p><strong>「只要每天来上课，居港规定就自动满足」</strong>——不一定。要看是否全日制、学校是否在认可名单内。</p>
+<p><strong>「国际学校一定算」</strong>——名单确实包含国际学校，但另一档「官立／资助／私立中学（日校）」明确不包括夜校和其他学校。先核名单，再谈资格。</p>
+<h3>谁该看这一条</h3>
+<p>住在深圳或大湾区、孩子每天或每周跨境来港读书的家庭；考虑「大人不动、孩子在港读」方案的家长。</p>
+<p><strong>这条最贵的错法，是把「没写」当成「可以」。官方没定义的算法，就是风险本身。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-037 条，官方口径取自「大学联招办法」《资格要求》页、教育局 SNDAS 说明与 GovHK 出入境纪录证明申请页。「每天过关如何计入」官方未定义，本条不作推断，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1495 字</span></div>
+  </section>
+  <section class="card" id="t05">
+    <div class="meta"><span class="no">05</span><span class="tag hot">争议·祛魅</span>
+      <span class="tag gd">对应指南 HK-033</span><span class="tag gd">第5天</span></div>
+    <h2 class="q">香港中学的「Band 1 名单」，到底存不存在？</h2>
+    <div class="answer">
+<p><strong>先说结论：香港官方没有一份「Band 1、Band 2、Band 3 中学」名单。</strong>「派位组别」（坊间叫 Band）是分给<strong>学生</strong>的，不是分给<strong>学校</strong>的；它只用于<strong>小六升中一的统一派位</strong>。内地生插班根本不走这套机制，插班看的是每所学校自订的收生准则。</p>
+<h3>事实一：官方术语是「派位组别」，分给学生</h3>
+<p>教育局《中学学位分配办法简介》单张原文：</p>
+<blockquote>「统一派位是按学生的派位组别、家长选校意愿和随机编号分配中一学位。」</blockquote>
+<p>组别怎么算：把学生在<strong>小五下学期、小六上、下学期</strong>的校内成绩标准化，再用学校 <strong>2018 及 2024 年</strong>「中一入学前香港学科测验」的抽样成绩调整，按调整后积分平均划成 <strong>3 个组别，每组约占三分之一</strong>。</p>
+<p>官方还专门写了一句：<strong>「由于『中一入学前香港学科测验』的成绩不会直接影响学生的派位结果，小学及家长毋须为此操练学生。」</strong></p>
+<h3>事实二：这套机制只管小六升中一，插班不走它</h3>
+<p>官方单张的对象是<strong>小学六年级学生</strong>，分「自行分配学位」与「统一派位」两个阶段。</p>
+<p>内地生插班（转入中二至中六）<strong>不属于</strong>这套派位机制。官方对「新来港儿童」的口径是：</p>
+<blockquote>「家长可直接联络学校，为子女递交入学申请，学校会按其校本情况（例如是否有学位空缺）考虑有关申请。」</blockquote>
+<p>也就是说：<strong>插班没有统一的 Band 门槛，收生准则由每所学校自己定。</strong></p>
+<h3>事实三：中一派位的「自行分配」阶段，官方禁止笔试</h3>
+<p>官方单张逐字规定：</p>
+<blockquote>「中学可按本身的办学理念和传统特色，自行录取适合的学生，但必须预先公布收生准则及比重。学校可以安排面试，但不得设任何形式的笔试。」</blockquote>
+<p>关键在「必须预先公布收生准则及比重」——<strong>这是你判断一所学校想收什么学生的唯一官方依据，比任何榜单都可靠。</strong></p>
+<p>注意：这条只限中一派位的「自行分配学位」阶段（2026 年度申请期是 2026-01-02 至 01-16）。<strong>插班不在此限，各校插班可以设笔试。</strong></p>
+<h3>时间节点</h3>
+<table><tr><th>节点</th><th>日期</th></tr>
+<tr><td>2026 年度中一「自行分配学位」申请期</td><td>2026-01-02 至 01-16</td></tr>
+<tr><td>参加派位中学通知正取学生家长</td><td>2026-03-31</td></tr>
+<tr><td>自行分配学位与统一派位结果一并公布</td><td>2026-07-07</td></tr>
+</table>
+<h3>红线提醒</h3>
+<ul><li><strong>别把坊间「Band 1 中学」当官方评级用。</strong>官方文件里没有这份名单。</li><li><strong>别把「派位组别」当学校等级。</strong>它是学生的分组。</li><li><strong>别把插班当派位办。</strong>插班要逐校查官网，没有统一日程。</li><li><strong>别在成绩或成绩单上动手脚。</strong>使用虚假文书属刑事罪行。</li></ul>
+<h3>常见误传</h3>
+<p><strong>「香港教育局给中学排了 Band 1/2/3」</strong>——官方没这份名单，只有学生的「派位组别」。</p>
+<p><strong>「Band 是学校排名，越高越好」</strong>——方向反了。派位组别是学生分组。坊间说的「Band 1 中学」，是对一所学校收生组别的归纳说法，不是官方评级。</p>
+<p><strong>「中一入学要考试」</strong>——官方恰好相反：可以面试，不得设任何形式的笔试（仅限自行分配学位阶段）。</p>
+<p><strong>「Band 由入学考试成绩决定，所以要操练」</strong>——官方明确说毋须为此操练，组别是用校内成绩算的。</p>
+<p><strong>「插班也要看 Band」</strong>——插班不走派位机制，各校自订收生准则。</p>
+<h3>那选校到底该看什么</h3>
+<p>三样，全部可查：</p>
+<ol><li><strong>学校官网公布的收生准则与比重</strong>（走中一派位的话，官方要求必须预先公布）；</li><li><strong>学校类型</strong>（官立、资助、直资、私立、国际——影响收不收学费、招不自主）；</li><li><strong>有没有学位空缺</strong>（插班的唯一硬前提）。</li></ol>
+<p>坊间榜单可以参考，但它是别人的归纳，不是官方标准。<strong>用它做「了解」，不要用它做「依据」。</strong></p>
+<h3>谁该看这一条</h3>
+<p>正在研究香港中学、被「Band 1」说法绕晕的家长；准备让孩子来港读中学（插班或升中一）的家庭；深圳跨境上学家庭。</p>
+<p><strong>「Band」这个词最大的问题不是不准，是它让你以为官方替你排好了顺序。其实没有。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-033 条，官方口径取自教育局《中学学位分配办法简介（2024/2026 年度）》单张与《新来港儿童入学安排》页。单张按年度出版，以当年官方版本为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1646 字</span></div>
+  </section>
+  <section class="card" id="t06">
+    <div class="meta"><span class="no">06</span><span class="tag hot">反常识·防坑</span>
+      <span class="tag gd">对应指南 HK-036</span><span class="tag gd">第6天</span></div>
+    <h2 class="q">「先降一级插班」在香港为什么行不通？</h2>
+    <div class="answer">
+<p><strong>先说结论：在香港的中学里，「读哪个年级」是学校按校本机制评定的，不是家长指定的。</strong>官方原文写明：学校不应在同一学年期间安排学生升级或降级；留级应视为<strong>特殊情况</strong>，而且中学整体重读生比率<strong>不得超过校内学生总数的 5%</strong>。所以「先降一级插班」这套做法，在香港的制度里基本没有操作空间。</p>
+<h3>官方怎么写的：三处原文</h3>
+<p><strong>① 年级由学校评定</strong></p>
+<p>教育局「公营中学学额空缺情况」页原文：</p>
+<blockquote>「公营学校在取录学生前，应按其校本机制面见申请『插班』的学生，以专业判断评定申请人适合就读的级别。然而，申请人亦须明白，学校提供的学位未必能完全符合申请人的意愿，包括欲就读的级别和欲修读的选修科。」</blockquote>
+<p><strong>② 同一学年内不得升降级</strong></p>
+<p>教育局《学校行政手册》（2026 年 8 月版）原文：</p>
+<blockquote>「在取录学生填补学位空缺时，学校须专业地评估学生的能力及需要，安排学生入读合适的年级，不应在同一学年期间安排学生升级或降级，以免影响其学习。」</blockquote>
+<p><strong>③ 留级是特殊情况，且有硬上限</strong></p>
+<p>同手册原文要点：</p>
+<blockquote>「一般来说，学生<strong>在每个学年完结时应晋升一级</strong>。要求学生重读某一年级的课程，<strong>应视为特殊情况</strong>来处理。」 「<strong>留级不是一项理想的安排</strong>……校方<strong>不可</strong>因学生在任何测验或考试中未能取得指定分数，便<strong>自动</strong>将该生留级。」 「不论学生是原校生或转校生，学校应尽量避免让学生留级，尤其<strong>不应重复留级</strong>。」 「<strong>中学学校整体重读生的比率不得超逾校内学生总数的 5%。</strong>」（小学为 3%）</blockquote>
+<h3>「降级策略」这个词，官方根本不存在</h3>
+<p>教育局、考评局、法例库里都<strong>没有</strong>「降级策略」这个提法。官方语汇只有「留级／重读」「升级」「插班」。</p>
+<p>同样，官方也<strong>没有</strong>「内地初三对应香港中几」的对应表。官方口径只有一句：学校面见、评估学生适合就读的级别——逐校评估，没有统一规则。</p>
+<h3>这套说法的代价，比你想的贵</h3>
+<p>按「先降一级」操作的家庭，常见动作是：先在内地退学、空等一年、再申请。</p>
+<p>但年级由学校评定，<strong>退学不会换来更好的年级</strong>。而这一年是实打实没了：孩子的学籍、状态、同龄人节奏，全都往后推一年，而且回不去。</p>
+<h3>红线提醒</h3>
+<ul><li><strong>别先在内地退学再慢慢申请。</strong>年级不是家长谈出来的。</li><li><strong>别把「留级」当谈条件的筹码。</strong>官方写明是特殊情况，还有 5% 的整体上限。</li><li><strong>别忽略学校类型。</strong>《学校行政手册》开篇注明适用于<strong>资助学校</strong>；直资／私立可自订收生与级别安排，规则不同，要逐校问。</li><li><strong>别把「降级就能提高录取机会」当常识。</strong>学校评估的是「学生适合读哪一级」，不是家长的意愿。</li></ul>
+<h3>常见误传</h3>
+<p><strong>「先降一级，录取机会更大」</strong>——官方没有这个机制。年级由学校评定，家长只能与学校磋商；且官方明文不应在同一学年内升降级。</p>
+<p><strong>「学校可以随便让孩子多读一年」</strong>——不成立。留级应视为特殊情况，不可因考试未达某分数就自动留级，中学整体重读率不超过 5%。</p>
+<p><strong>「留级只是为了孩子好，没别的成本」</strong>——官方本身列出了反向后果：可能成为超龄学生、占据学位影响其他学童入学机会，还可能减低学习兴趣、损害自我形象。</p>
+<p><strong>「超过某个年龄就不能考 DSE」</strong>——官方没有年龄上限。自修生资格是「曾应考文凭试」或「考试年份 1 月 1 日已足 19 岁」，没有「超龄不得报考」的条款。</p>
+<p><strong>「内地的留级规定在香港也适用」</strong>——不适用。香港的依据是教育局《学校行政手册》与《资助则例》。</p>
+<h3>那正确的做法是什么</h3>
+<p>三步：</p>
+<ol><li><strong>先确认目标校类型</strong>（资助／直资／私立），规则不同；</li><li><strong>直接问学校：按你们的校本机制，我孩子会评到哪一级</strong>——这是唯一有效的问法；</li><li><strong>按学校评估的年级正常申请</strong>，不要为了「降一级」提前退学。</li></ol>
+<h3>谁该看这一条</h3>
+<p>正在考虑「降一级插班」的内地家长；被中介用「先降级更稳」推着走的家庭。</p>
+<p><strong>这条的价值不在「知道」，在「别先退学」。一个动作做错，损失是一整年，而且没有撤销键。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-036 条，官方口径取自教育局「公营中学学额空缺情况」页、学位安排支援服务登记表、《学校行政手册》（2026 年 8 月版）与《资助则例（中学）》。「降级策略失效」的因果解读属基于官方原文的推断，非官方结论，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1696 字</span></div>
+  </section>
+  <section class="card" id="t07">
+    <div class="meta"><span class="no">07</span><span class="tag dec">决策·预算</span>
+      <span class="tag gd">对应指南 HK-046</span><span class="tag gd">第7天</span></div>
+    <h2 class="q">一年制港硕到底多少钱？先把学费算清楚再谈值不值</h2>
+    <div class="answer">
+<p><strong>先说结论：香港的授课式硕士是自资的，教资会不资助，所以没有统一学费标准，必须逐校、逐课程、带学年来查。</strong>同是 2026/27 学年：港大 MSc(CS) 非本地 <strong>HK$334,800</strong>；科大 MSc(IT) <strong>HK$300,000</strong>；理大 MSc(AWM) <strong>HK$495,000</strong>（本地与非本地同价）；中大 MSc(GIS) <strong>HK$200,000／年</strong>。</p>
+<p><strong>另外，「一年制」只是常见默认，不是法定学制。</strong>同一所学校里，也有 1.5 年和 2 年的课程。</p>
+<h3>先看性质：授课式硕士是「自资」的</h3>
+<p>教资会官方原文（FTSS 计划页）写明：该计划面向<strong>本地学生</strong>，学生至少要付 UGC 资助学位课程的学费（2025/26 为 HK$44,500，2026/27 为 HK$47,000），差额由奖学金补足，上限每人整个课程 HK$100,000。</p>
+<p>反推一下就知道：<strong>授课式硕士的学费，一定高于资助学位课程。</strong>它不属于政府资助的学位，学校按课程成本定价。</p>
+<h3>真实学费，按校按课（都带学年）</h3>
+<table><tr><th>学校</th><th>课程</th><th>学年</th><th>学费</th></tr>
+<tr><td>港大</td><td>MSc Computer Science（一般／网络安全／金融计算／多媒体分流）</td><td>2026/27</td><td>本地全日制 HK$240,000；非本地全日制 <strong>HK$334,800</strong></td></tr>
+<tr><td>港大</td><td>MSc Computer Science（AI 与去中心化技术分流）</td><td>2026/27</td><td>本地 HK$275,000；非本地 <strong>HK$375,000</strong></td></tr>
+<tr><td>港大</td><td>MSc Food Industry: Management and Marketing</td><td>2026-27</td><td>全课程 <strong>HK$210,000</strong>（可分 2 期）</td></tr>
+<tr><td>中大</td><td>MSc GeoInformation Science and Smart Cities</td><td>2026-2027</td><td>全日制 <strong>HK$200,000／年</strong>；兼读制 HK$100,000／年</td></tr>
+<tr><td>中大</td><td>MA in English (Applied English Linguistics)</td><td>现行</td><td><strong>HK$210,000／年</strong>（全日制，自资）</td></tr>
+<tr><td>科大</td><td>MSc Information Technology</td><td>2026/27 Fall</td><td>全日制 <strong>HK$300,000</strong>；兼读制 HK$260,000</td></tr>
+<tr><td>科大</td><td>MSc Financial Mathematics</td><td>2026/27</td><td><strong>HK$250,000／36 学分</strong>（1.5 年全日制）</td></tr>
+<tr><td>科大</td><td>Master of Public Policy</td><td>2026-27</td><td><strong>HK$320,000</strong>（两年全日制，共 48 学分）</td></tr>
+<tr><td>理大</td><td>MSc Asset and Wealth Management</td><td>2026/27</td><td><strong>HK$495,000／课程</strong>（HK$16,500×30 学分；本地与非本地同价）</td></tr>
+<tr><td>城大</td><td>MSc Electronic Engineering</td><td>2026/27</td><td>总学费 <strong>HK$258,000（30 学分）／HK$387,000（45 学分）</strong></td></tr>
+<tr><td>城大</td><td>MSc Artificial Intelligence for Sciences</td><td>2027/28</td><td>本地 HK$11,700／学分；非本地 <strong>HK$13,300／学分</strong></td></tr>
+</table>
+<p>看完这张表，最该记住的一句话是：<strong>同一学年，不同课程的学费可以差两倍以上。</strong>理大 AWM 的 49.5 万和城大 30 学分的 25.8 万，都是「港硕」。</p>
+<h3>学制：1 年不是「法定」的</h3>
+<ul><li><strong>1 年</strong>：港大 MSc Food Industry（官方写 one-year full-time）、理大 MSc(AWM)、科大 MSc(ELEG)、中大 MA English。</li><li><strong>1.5 年</strong>：科大 MSc(MAFM)（官方写 1.5 years full-time）；城大 MSc(ELE) 另有 1.5 年选项。</li><li><strong>2 年</strong>：科大 Master of Public Policy（官方写 covering two years of full-time study）。</li></ul>
+<p><strong>所以「一年制港硕」是一个习惯说法，不是制度名称。</strong>你申请的每一个课程，都要回它的课程页看学制。</p>
+<h3>四个必须核对的硬项</h3>
+<ol><li>课程页上的<strong>学年</strong>（2026/27 的数字不能套到 2027/28）；</li><li>你是<strong>本地生还是非本地生</strong>（部分课程两价，部分同价）；</li><li>计价方式：<strong>按学分</strong>还是<strong>按课程</strong>；</li><li><strong>学制几年</strong>（1／1.5／2 年）。</li></ol>
+<h3>红线提醒</h3>
+<ul><li><strong>别找「港硕学费总表」。</strong>没有这个东西。港大、城大按学分计，科大官方写「Fees vary for each program」，中大要求逐个课程页查。</li><li><strong>别把 2026/27 的数字用到 2027/28。</strong>学费逐年调整。</li><li><strong>别忽略本地／非本地差价。</strong>有的课程差近 10 万。</li><li><strong>别把学费当总成本。</strong>住宿、生活、签证、往返都另计，而且住宿往往是第二大项。</li></ul>
+<h3>常见误传</h3>
+<p><strong>「港硕都是一年」</strong>——不。1 年、1.5 年、2 年都有。</p>
+<p><strong>「港硕学费都差不多，二十几万」</strong>——差异可以到两倍以上，要看具体课程。</p>
+<p><strong>「学费里包含住宿和生活费」</strong>——不包含，学费只是学费。</p>
+<p><strong>「去年的价格今年还能用」</strong>——不能，按学年定价。</p>
+<h3>谁该看这一条</h3>
+<p>正在算「读港硕值不值」的家庭；拿到 offer 在核对费用的学生；被「一年二十万搞定」这类说法吸引的人。</p>
+<p><strong>「值不值」是个主观问题，但「多少钱」是个可以查清的事实问题。先把事实查清，再谈值不值——顺序反了，结论一定是被人给的。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-046 条，学费取自各校官方课程页与教资会 FTSS 页面，均标注学年。学费逐年调整，以你申请当年的课程页为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">2262 字</span></div>
+  </section>
+  <section class="card" id="t08">
+    <div class="meta"><span class="no">08</span><span class="tag dec">决策·祛魅</span>
+      <span class="tag gd">对应指南 HK-047</span><span class="tag gd">第8天</span></div>
+    <h2 class="q">双非本科能申港硕吗？官方根本没有「院校名单」</h2>
+    <div class="answer">
+<p><strong>先说结论：港校官方没有任何「认可院校名单」，也不按 985、211、双非分档。</strong>五校的研究生入学要求一律写「认可大学或认可机构的本科学位」或「同等资格」，<strong>从未点名院校层次</strong>。</p>
+<p>「双非要多少均分」这类数字全部来自中介，官方没有。英语门槛官方是明的：港大 IELTS 6.0（文学院部分课程 7.0）；中大 6.5；科大、理大、城大都是 6.0。</p>
+<h3>五校官方原文，逐字看</h3>
+<p><strong>香港大学</strong></p>
+<blockquote>「shall hold a Bachelor&#x27;s degree of this University or a qualification of equivalent standard from this University or another comparable institution accepted for this purpose」</blockquote>
+<p><strong>香港中文大学</strong></p>
+<blockquote>「graduated from a recognised university and obtained a bachelor&#x27;s degree, normally with honours not lower than Second Class or achieving an average grade of not lower than &#x27;B&#x27;；or completed a course of study in a tertiary educational institution and obtained professional or similar qualifications equivalent to a bachelor&#x27;s degree.」</blockquote>
+<p><strong>香港科技大学</strong></p>
+<blockquote>「Obtained a bachelor&#x27;s degree from a recognized institution, or an approved equivalent qualification.」 同时写明：「Admissions is selective and meeting these minimum requirements does not guarantee admissions.」</blockquote>
+<p><strong>香港理工大学</strong></p>
+<blockquote>「the basic requirement is a Bachelor&#x27;s degree from an institution that is recognised by PolyU. …… PolyU may accept equivalent qualifications. The decision is made on an individual basis.」</blockquote>
+<p><strong>香港城市大学</strong></p>
+<blockquote>「hold a bachelor&#x27;s degree from one of the universities in Hong Kong or from an overseas institution recognised for this purpose by the University; or hold such other qualifications as deemed acceptable by the University as equivalent to the above.」</blockquote>
+<p><strong>五份原文里，没有一所学校写「985」「211」「双非」，也没有一份「认可院校名单」。</strong></p>
+<h3>官方给的是「定性要求」，不是「分数表」</h3>
+<p>中大那份写得最具体：荣誉等级不低于 Second Class，或平均分不低于「B」。<strong>这是定性表述，不是「双非要 87 分」这种精确门槛。</strong></p>
+<p>至于「985/211 要 80–85 分、双非要 87 分以上」——<strong>官方没有任何此类原文</strong>，这类数字只出现在留学机构页面上。</p>
+<h3>英语门槛（官方数字）</h3>
+<table><tr><th>学校</th><th>TOEFL</th><th>IELTS</th><th>备注</th></tr>
+<tr><td>港大</td><td>80 或以上</td><td>总分 <strong>6.0</strong>，单项不低于 5.5</td><td>文学院部分课程总分 7.0</td></tr>
+<tr><td>中大</td><td>79</td><td><strong>6.5</strong></td><td>—</td></tr>
+<tr><td>科大</td><td>依官方入学要求页</td><td>依官方入学要求页</td><td>—</td></tr>
+<tr><td>理大</td><td>80</td><td>总分 <strong>6.0</strong></td><td>—</td></tr>
+<tr><td>城大</td><td>79</td><td>总分 <strong>6.0</strong></td><td><strong>明列接受内地 CET-6 Band 6</strong></td></tr>
+</table>
+<p><strong>注意 CET-6 各校不一：</strong>城大明列接受，理大旧版 TPG 要求也列过；<strong>港大、中大、科大官方入学要求页未列 CET</strong>。别把六级当成通用通行证。</p>
+<h3>申请费（也要算进预算）</h3>
+<p>港大 HK$600、中大 HK$500、城大 HK$600、理大 2027/28 为 HK$600（按校收取）。</p>
+<h3>课程可以加更高要求</h3>
+<p>中大研究生总则原文：</p>
+<blockquote>「Each Graduate Division may set further requirements, including a subject test or language test, and may also waive such additional requirements in particular cases.」</blockquote>
+<p>所以「学校级要求」只是底线，<strong>课程层面可以更严</strong>。你查的必须是目标课程那一页，不是研究生院首页。</p>
+<h3>红线提醒</h3>
+<ul><li><strong>别用「双非」给自己设限。</strong>官方要求是「认可机构的本科学位」，没有院校层次名单。</li><li><strong>别买「双非保过／内部名单」的服务。</strong>港大官方有严正声明：所谓「低门槛、无标准成绩直接录取」完全无根据，且未授权任何中介招生。</li><li><strong>别只看学校级要求。</strong>课程可另设更高门槛。</li><li><strong>别把 CET-6 当通用通行证。</strong>逐校核。</li><li><strong>别忽略英语成绩的换算方式变化</strong>（部分学校 2026-01-21 起调整了 TOEFL 分数口径），以你申请当年的官方页为准。</li></ul>
+<h3>常见误传</h3>
+<p><strong>「双非要 87 分才能申」</strong>——官方无此数字，只有「Second Class / B」这类定性要求。</p>
+<p><strong>「港校有内部认可院校名单」</strong>——五校官方页都没有。</p>
+<p><strong>「双非不能申港三」</strong>——官方没有任何一条这样写。</p>
+<p><strong>「找机构就能低门槛录取」</strong>——港大已公开否认，并声明未授权中介。</p>
+<h3>那「双非」该怎么提高胜算</h3>
+<p>三件事，都可执行：</p>
+<ol><li><strong>把课程页的入学要求逐条对齐</strong>（学位、荣誉等级／均分口径、英语、是否要学科测试）；</li><li><strong>补课程层面的加分项</strong>（相关工作经历、项目、论文、面试准备）；</li><li><strong>拉开申请梯度</strong>，不要只押一所。</li></ol>
+<h3>谁该看这一条</h3>
+<p>双非本科、正在被中介「门槛表」吓住或骗住的学生；想确认港校到底有没有院校名单的家长。</p>
+<p><strong>官方没写的门槛，不该由中介替你写。你要核的是课程页，不是报价单。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-047 条，官方口径取自港大、中大、科大、理大、城大研究生入学要求页与中大研究生总则。分数口径按学年调整，以你申请当年的官方页为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">2784 字</span></div>
+  </section>
+  <section class="card" id="t09">
+    <div class="meta"><span class="no">09</span><span class="tag dec">决策·时间表</span>
+      <span class="tag gd">对应指南 HK-032</span><span class="tag gd">第9天</span></div>
+    <h2 class="q">孩子现在读中几，最晚什么时候必须来香港读书？</h2>
+    <div class="answer">
+<p><strong>先说结论：拿受养人签证的孩子要走联招考港校，必须在指定日期前进入香港认可学校全日制就读。按官方节点倒推：2028 年度起是两年期，最晚要在中五开学（9 月）前在港全日制就读。</strong></p>
+<p>只在中六才来，就只能看「每年不多于 90 天不在港」那条路走不走得通。而 2027 年度过渡路径的指定入学日期 <strong>2026-09-15 已经过了</strong>——中途插队的家庭，要尽快去确认自己还算不算符合。</p>
+<h3>官方节点（逐年不同，这是最容易算错的地方）</h3>
+<table><tr><th>联招年度</th><th>居港要求</th><th>计算截止</th><th>指定完成入学日期</th></tr>
+<tr><td>2026 年度</td><td><strong>无居港规定</strong></td><td>—</td><td>—</td></tr>
+<tr><td>2027 年度</td><td><strong>一年期</strong>（过渡）</td><td>2027-05-31</td><td><strong>2026-09-15</strong>（已过）</td></tr>
+<tr><td>2028 年度起</td><td><strong>两年期</strong></td><td>开课当年 05-31</td><td><strong>2026-09-15 及 2027-09-15</strong></td></tr>
+</table>
+<p>出入境纪录涵盖期间：2027 年度为 2026-06-01 至 2027-05-31；2028 年度起为 2026-06-01 至 2028-05-31，<strong>每段一年分别核算</strong>，每年不多于 90 天不在港。</p>
+<h3>倒推怎么做（这一段是推算，不是官方表述）</h3>
+<p>DSE 在中六学年末应考、同年 9 月入大学。所以两年期覆盖的，正是中五、中六这两个学年。</p>
+<table><tr><th>目标入学</th><th>对应中六学年</th><th>中五学年</th><th>最晚入读时间</th></tr>
+<tr><td>2028 年 9 月</td><td>2027-28</td><td>2026-27</td><td><strong>2026 年 9 月（中四升中五）</strong></td></tr>
+<tr><td>2029 年 9 月</td><td>2028-29</td><td>2027-28</td><td><strong>2027 年 9 月（中四升中五）</strong></td></tr>
+</table>
+<p>规律很简单：<strong>每往后推一年入学，最晚入读时间也跟着往后推一年。</strong></p>
+<p><strong>我要明确标一句：这张表是按官方节点推算的，不是官方表述。</strong>官方只给日期，不给「读中几对应哪一年」的对应表。插班、跳级、重读的个案，必须个别核算。</p>
+<h3>三个必须对上的东西</h3>
+<ol><li><strong>目标联招年度</strong>是哪一年；</li><li>这个年度看的是<strong>一年</strong>还是<strong>两年</strong>；</li><li>孩子目前读中几，能不能在那之前完成入读。</li></ol>
+<h3>红线提醒</h3>
+<ul><li><strong>别只看「住满」，不看「全日制就读」。</strong>官方要求的是在全日制、且学校在教育局认可名单内。光是「人在香港」不符合。</li><li><strong>别把「联招年度」和「学年」混着算。</strong>2027 年度 = 2027 年 9 月入学，换算错一年，整张表全错。</li><li><strong>别信商业机构的时间表。</strong>它们大多转述成「2027/28 起住满一年」，说法本身没错，错在「怎么算」——计算窗口在<strong>前一年</strong>。</li><li><strong>别在就读证明或出入境记录上动手脚。</strong>使用虚假文书属刑事罪行。</li><li><strong>别指望「先报名、后补居港」。</strong>不符合资格者不得透过联招递交申请，没有补救窗口。</li></ul>
+<h3>常见误传</h3>
+<p><strong>「孩子中六过来读一年就够了」</strong>——只对 2027 年度那道一年期过渡成立，且指定日期是 2026-09-15，已过。2028 年度起改为两年期，中六才来不够。</p>
+<p><strong>「住满两年就自动符合」</strong>——官方给的是全日制就读，或每年不超过 90 天不在港。「住满」不是官方用语。</p>
+<p><strong>「最晚高三入学就行，之前在内地读不影响」</strong>——错。两年期看的是在港认可学校全日制就读的时间，内地就读期间不计入。</p>
+<p><strong>「2027 年入学的还来得及赶」</strong>——(a) 路径的指定日期 2026-09-15 已过，是否仍符合必须向联招处／教育局确认。</p>
+<p><strong>「中四来最稳，中五来也一样」</strong>——两年期看的是是否覆盖完整。中五（9 月）是常规情形的最后一档，再晚只能靠出入境纪录那条路。</p>
+<h3>谁该看这一条</h3>
+<p>孩子在内地读初中或高中、持或准备持受养人签证来港、目标港校本科的家庭。</p>
+<p><strong>这条是全套规划里唯一有「过期作废」性质的。别的可以补，日期过了就是过了。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-032 条，官方节点取自「大学联招办法」《资格要求》页与教育局 SNDAS 说明；「读中几对应哪一年」为按官方节点推算，非官方表述。个案认定以官方为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1551 字</span></div>
+  </section>
+  <section class="card" id="t10">
+    <div class="meta"><span class="no">10</span><span class="tag hot">打假·防骗</span>
+      <span class="tag gd">对应指南 HK-067</span><span class="tag gd">第10天</span></div>
+    <h2 class="q">「办身份必须买港险」「收益 6% 写进合同」，这两句话能信吗？</h2>
+    <div class="answer">
+<p><strong>先说结论：这两句话都不成立。</strong></p>
+<p><strong>第一句「办身份必须买港险，不买续签过不了」</strong>——香港各身份计划的官方资格里，<strong>没有任何购买保险的要求</strong>。以高才通为例，官方写的资格是收入、学历、工作经验，通篇没有「保险」两个字。</p>
+<p><strong>第二句「收益 6% 写进合同」</strong>——合同里写进「保证」的，可能只是其中很小一部分。保监局对分红保单有明文要求：<strong>须提供悲观及乐观情景的额外估算，以显示非保证利益的差幅</strong>。也就是「保证的钱」和「不保证的钱」，必须分开写。</p>
+<h3>官方怎么规定的：保证与非保证</h3>
+<p>保监局消费者页原文：</p>
+<blockquote>「就分红保单而言，保险公司须提供悲观及乐观情景的额外估算，以显示非保证利益的差幅。」</blockquote>
+<p>它还给了一个具体例子：</p>
+<blockquote>「其中仅 <strong>10,000 元为保证金额</strong>，即保险公司必须向你派发该 10,000 元；另外的 <strong>20,700 元</strong>，不论是由周年红利累积的红利及利息，或终期红利，<strong>都是非保证的金额</strong>，保险公司有可能向你派发少于或多于 20,700 元。」</blockquote>
+<p><strong>所以判断标准只有一条：分清这句话讲的是「保证」还是「非保证」。</strong>演示表上的数字，如果是非保证部分，就不是承诺。</p>
+<h3>监管口径的边界</h3>
+<ul><li>利益说明文件的标准规定，写在保监局<strong>指引 28</strong>。</li><li>承保长期保险业务的指引是 <strong>GL16</strong>（旧称 GN16），修订版自 <strong>2026-03-31</strong> 生效。</li><li><strong>GL34</strong> 同日生效，其中第 4 节自 <strong>2026-06-30</strong> 生效。</li></ul>
+<p>这几个编号要记准：<strong>编号记错，你去官网就对不上</strong>，也就没法核。</p>
+<h3>无牌销售，是刑事层面的事</h3>
+<p>保监局原文：</p>
+<blockquote>「保监局通过打击无牌销售来保护保单持有人，同时亦支持那些努力工作、遵守规则的专业持牌保险中介人。」</blockquote>
+<p>官方并载明：2024 年 4 月 10 日与廉政公署采取联合行动，2024 年 5 月 22 日发出通函。</p>
+<p>转介业务三大原则里，第一条最要命：</p>
+<blockquote>「原则 1——<strong>无牌转介人不得向客户提供任何受规管意见，也不得从事任何受规管活动或销售活动</strong>。」</blockquote>
+<p>也就是说：<strong>「我只是介绍客户，讲两句产品没关系」这句话本身，就是违规。</strong></p>
+<h3>三条能立刻用的判断标准</h3>
+<ol><li><strong>问对方：你是持牌中介吗？</strong>牌照编号可查。</li><li><strong>问这句话：这是保证还是非保证？</strong>让他指给你看合同/利益说明文件里写在哪一栏。</li><li><strong>问身份计划：哪一条官方资格要求买保险？</strong>——没有。你让他把原文找出来。</li></ol>
+<h3>红线提醒</h3>
+<ul><li><strong>不点名机构。</strong>本条只讲识别方法，不写任何公司、平台或个人名字。</li><li><strong>别信「内部渠道，帮你把 6% 写进合同」。</strong>合同里能写进「保证」的只有保证部分，而官方要求分红保单必须做悲观／乐观两种情景演示。</li><li><strong>别把买保险当办身份的必要条件。</strong>高才通等计划的官方资格里没有购险要求。</li><li><strong>别在内地找人代签保单。</strong>无牌销售是官方明确打击的对象，涉及刑事与合规风险。</li></ul>
+<h3>常见误传</h3>
+<p><strong>「办香港身份必须买港险，不然续签过不了」</strong>——官方无此要求，各计划资格里完全没有保险项。</p>
+<p><strong>「这款产品 6% 收益写进合同，保证的」</strong>——保证与非保证必须分开看。官方例子中，只有 1 万是保证金额，其余都是非保证。</p>
+<p><strong>「演示表上那个数字就是我能拿到的钱」</strong>——不是。官方要求用悲观与乐观两种情景演示，非保证部分可能少于或多于演示金额。</p>
+<p><strong>「中介只负责介绍客户，讲两句产品没关系」</strong>——有明确规定：无牌转介人不得提供任何受规管意见。</p>
+<p><strong>「有博主说某产品 6% 以上、写进合同」</strong>——这一类具体个案数字，<strong>只有媒体调查报道，官方未公布</strong>，本条不把任何个案数字当官方事实使用。</p>
+<h3>谁该看这一条</h3>
+<p>正在办或已办香港身份、被推荐「顺手买一份港险」的家庭；在社交平台上刷到「港险收益 6%」内容的读者；想弄清身份和保险到底有没有关系的人。</p>
+<p><strong>身份归身份，保险归保险。把两件事捆在一起卖的人，卖的不是保险，是信息差。</strong></p>
+<p>—— 董老师，深港生活 20 年，经手 150 多个家庭的香港升学与身份规划。本文依据《董老师香港留学指南 2026》第 HK-067 条，官方口径取自保监局「认识分红保单」消费者页、《监管通讯》第 9 期、GL16／GL34 发函，以及入境处高才通计划资格页。监管口径与计划资格会更新，以官方最新公布为准，更新于 2026 年 10 月。</p>
+    </div>
+    <div class="foot"><button onclick="copyOne(this)">复制这篇</button><span class="n">1659 字</span></div>
+  </section>
+</div>
+
+<script>
+function normalize(t){return t.replace(/\r/g,'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').replace(/^\n+/,'').trim();}
+function blockText(node){
+  var out='';
+  node.childNodes.forEach(function(n){
+    if(n.nodeType===3){out+=n.textContent;return;}
+    if(n.nodeType!==1)return;
+    var tag=n.tagName;
+    if(tag==='TABLE'){out+='\n'+tableText(n)+'\n';return;}
+    if(tag==='BR'){out+='\n';return;}
+    if(tag==='LI'){out+='\n· '+blockText(n).trim();return;}
+    if(['P','DIV','H3','H4','H2','BLOCKQUOTE'].indexOf(tag)>=0){out+='\n'+blockText(n).trim()+'\n';return;}
+    out+=blockText(n);
+  });
+  return out;
+}
+function tableText(tbl){
+  var rows=[];
+  tbl.querySelectorAll('tr').forEach(function(tr){
+    var cells=[];
+    tr.querySelectorAll('th,td').forEach(function(c){cells.push(c.innerText.replace(/\s+/g,' ').trim());});
+    rows.push(cells.join(' ｜ '));
+  });
+  return rows.join('\n');
+}
+function answerText(card){
+  var q=card.querySelector('.q').innerText.trim();
+  var a=card.querySelector('.answer');
+  return q+'\n\n'+normalize(blockText(a));
+}
+function flash(btn,text){var old=btn.textContent;btn.textContent=text;btn.classList.add('done');setTimeout(function(){btn.textContent=old;btn.classList.remove('done');},1600);}
+function writeClipboard(text,btn,ok){
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(function(){flash(btn,ok);}).catch(function(){fallback(text,btn,ok);});}
+  else{fallback(text,btn,ok);}
+}
+function fallback(text,btn,ok){
+  var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.top='-9999px';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');flash(btn,ok);}catch(e){alert('复制失败，请手动选中文本');}
+  document.body.removeChild(ta);
+}
+function copyOne(btn){writeClipboard(answerText(btn.closest('.card')),btn,'已复制 ✓');}
+function copyAll(btn){
+  var parts=[];document.querySelectorAll('.card').forEach(function(c){parts.push(answerText(c));});
+  writeClipboard(parts.join('\n\n————————————\n\n'),btn,'全部已复制 ✓');
+}
+</script>
+</body>
+</html>
