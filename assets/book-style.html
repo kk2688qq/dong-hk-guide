@@ -87,12 +87,28 @@ h1 {
 /* 书名与目录之后的第一个 h1（第一条正文 / 第一个前置章节）不需要大分隔 */
 header#title-block-header h1, nav#TOC h1 { border: 0; margin: 0; padding: 0; }
 h2 {
-  font-size: 1.22em;
+  font-size: 1.28em;
   margin: 2em 0 .55em;
-  padding-bottom: .3em;
-  border-bottom: 1px solid #e6eaf0;
+  padding: .42em .7em;
+  background: #d9e8f8;
+  border-left: 5px solid #12406e;
+  border-radius: 6px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
-h3 { font-size: 1.06em; margin: 1.5em 0 .45em; }
+h3 {
+  font-size: 1.16em;
+  font-weight: 700;
+  margin: 1.5em 0 .45em;
+  padding: .38em .7em;
+  background: #dbe9f9;
+  border-left: 5px solid #c8a45c;
+  border-radius: 6px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+/* 封面副题是 h2，不吃章标题的底色 */
+.cover h2 { background: none; border-left: 0; border-radius: 0; padding: 0; margin: 0 0 1em; }
 /* 字段小标题：书稿里是 ####（说人话 / 要花什么 / 换回什么 …）。
    2026-10-08 补：此前只写了「**字段**」加粗段落的规则，定稿改成四级标题后
    这一栏没有任何样式，字段名和正文混在一起、看不出层次。 */
@@ -125,8 +141,12 @@ table {
   line-height: 1.6;
 }
 th, td { border: 1px solid #d8dee7; padding: 7px 10px; text-align: left; vertical-align: top; }
-th { background: #f0f4f9; font-weight: 600; white-space: nowrap; }
+th { background: #f0f4f9; font-weight: 600; }
 tr:nth-child(even) td { background: #fafbfd; }
+/* 2026-10-14 v1.5：表头不再强制单行（原先 nowrap 把「误传（★＝强钩子）」列撑死，
+   序号列被挤到「501」竖排成三行）；首列不换行，长词只在自身放不下时才断 */
+th, td { word-break: normal; overflow-wrap: break-word; }
+table th:first-child, table td:first-child { white-space: nowrap; }
 
 /* ---------- 引用 / 代码 / 链接 / 分隔线 ---------- */
 blockquote {
@@ -145,6 +165,19 @@ code {
   font-size: .88em;
   font-family: ui-monospace, Consolas, "Courier New", monospace;
 }
+/* 代码块（``` 围栏）：整块浅灰底，命令一眼可复制 */
+pre {
+  background: #f4f6f9;
+  border: 1px solid #e0e6ee;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 1em 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+pre code { background: none; padding: 0; font-size: .9em; }
 a { color: #0b5cad; text-decoration: none; overflow-wrap: anywhere; }
 a:hover { text-decoration: underline; }
 hr { border: 0; border-top: 1px dashed #d4dbe4; margin: 2.4em 0; }
@@ -171,7 +204,8 @@ li { margin: .3em 0; }
   nav#TOC > ul > li > a { color: #7fb3e8; }
   nav#TOC::before { color: #7fb3e8; }
   h1 { border-top-color: #2c3644; }
-  h2 { border-bottom-color: #2c3038; }
+  h2 { background: #233042; border-left-color: #7fb3e8; }
+  h3 { background: #1f2a38; border-left-color: #8a6d2f; }
   p > strong:only-child { color: #7fb3e8; border-left-color: #8a6d2f; }
   th { background: #22252b; }
   tr:nth-child(even) td { background: #1b1e23; }
@@ -197,7 +231,12 @@ li { margin: .3em 0; }
   nav#TOC { columns: 2; background: #f7f9fc; }
   h1 { margin-top: 1.6em; page-break-after: avoid; }
   h2, h3 { page-break-after: avoid; }
-  table, blockquote { page-break-inside: avoid; }
+  /* 2026-10-14 v1.5：大表格不再整体挤到下一页（原先 avoid 造成表格前整页空白），
+     改为允许跨页续排、行内不断、跨页重复表头 */
+  blockquote { page-break-inside: avoid; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  thead { display: table-header-group; }
   /* 分页归版式层（2026-10-08 董老师定：源文件里不再写分页符号）。
      规则：目录页 + 每个章节级标题各自另起一页——等价于原先「每个标题前一个
      显式分页符」的观感；封面（第一个 h1）不另起页。

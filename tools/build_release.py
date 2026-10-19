@@ -83,7 +83,7 @@ def _slugify_factory():
 def render_body(md_text: str):
     """定稿 markdown → (正文 HTML, 目录 HTML)。"""
     md = markdown.Markdown(
-        extensions=["tables", "toc"],
+        extensions=["tables", "toc", "fenced_code"],  # fenced_code：2026-10-14 补——此前 ```bash 围栏不解析，"bash" 语言标记漏成正文文字（董老师 10-14 实测发现）
         extension_configs={
             "toc": {"slugify": _slugify_factory(), "toc_depth": "1-3"},
         },
